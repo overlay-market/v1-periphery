@@ -4,7 +4,6 @@ pragma solidity 0.8.10;
 import "@overlay/v1-core/contracts/interfaces/IOverlayV1Factory.sol";
 
 contract OverlayV1MarketState {
-
     IOverlayV1Factory public immutable factory;
 
     constructor(IOverlayV1Factory _factory) {

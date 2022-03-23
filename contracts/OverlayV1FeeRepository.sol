@@ -44,7 +44,7 @@ contract OverlayV1FeeRepository {
     /// @notice liquidity mining program based on pool properties
     function _minWidthMaxRange(IUniswapV3Pool _pool) private returns (int24 minWidth_) {
         int24 tickSpacing = _pool.tickSpacing();
-        int24 maxTick = TickMath.MAX_TICK - TickMath.MAX_TICK % tickSpacing;
+        int24 maxTick = TickMath.MAX_TICK - (TickMath.MAX_TICK % tickSpacing);
         int24 minTick = -maxTick;
         minWidth_ = maxTick - minTick;
     }
@@ -58,7 +58,7 @@ contract OverlayV1FeeRepository {
         // needed attributes of incentive key
         uint256 startTime = blockTimestamp + incentiveLeadTime;
         uint256 endTime = startTime + incentiveDuration;
-        int24 minWidth = _minWidthMaxRange(pool);  // max range
+        int24 minWidth = _minWidthMaxRange(pool); // max range
 
         // reward to be given out should be current balance of fees
         uint256 reward = ovl.balanceOf(address(this));
