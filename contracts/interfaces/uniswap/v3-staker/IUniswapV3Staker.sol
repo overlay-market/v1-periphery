@@ -17,7 +17,8 @@ interface IUniswapV3Staker is IERC721Receiver, IMulticall {
     /// @param startTime The time when the incentive program begins
     /// @param endTime The time when rewards stop accruing
     /// @param minWidth The minimum width of a staked position
-    /// @param refundee The address which receives any remaining reward tokens when the incentive is ended
+    /// @param refundee The address which receives any remaining reward tokens
+    /// @param          when the incentive is ended
     struct IncentiveKey {
         IERC20Minimal rewardToken;
         IUniswapV3Pool pool;
