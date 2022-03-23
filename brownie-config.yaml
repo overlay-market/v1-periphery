@@ -11,16 +11,18 @@ dotenv: .env
 # require OpenZepplin, Uniswap Contracts
 dependencies:
   - OpenZeppelin/openzeppelin-contracts@4.4.2
+  - overlay-market/v1-core@1.0.0-beta.1
   - Uniswap/v3-core@1.0.0
   - Uniswap/v3-periphery@1.0.0
 
 # path remapping to support imports from GitHub/NPM
 compiler:
   solc:
-    version: 0.8.2
+    version: 0.8.10
     optimizer:
       runs: 800
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.4.2"
+      - "@overlay/v1-core=overlay-market/v1-core@1.0.0-beta.1"
       - "@uniswap/v3-core=Uniswap/v3-core@1.0.0"
       - "@uniswap/v3-periphery=Uniswap/v3-periphery@1.0.0"
