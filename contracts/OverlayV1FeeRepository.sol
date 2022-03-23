@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
+import "@overlay/v1-core/contracts/interfaces/IOverlayV1Token.sol";
 import "@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 
-import "./interfaces/overlay/v1-core/IOverlayV1Token.sol";
 import "./interfaces/uniswap/v3-staker/IUniswapV3Staker.sol";
 import "./libraries/uniswap/v3-core/TickMath.sol";
 
