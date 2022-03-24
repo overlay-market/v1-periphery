@@ -17,7 +17,7 @@ contract OverlayV1MarketState {
     /// @dev reverts if market doesn't exist
     function _getMarket(address feed) private view returns (IOverlayV1Market market_) {
         address marketAddress = factory.getMarket(feed);
-        require(marketAddress != address(0), "OVLV1: !market");
+        require(marketAddress != address(0), "OVLV1:!market");
         market_ = IOverlayV1Market(marketAddress);
     }
 
@@ -37,7 +37,7 @@ contract OverlayV1MarketState {
         oiLong_ = market.oiLong();
         oiShort_ = market.oiShort();
 
-        // time since funding last paid
+        // time elapsed since funding last paid
         // if > 0, adjust for funding
         uint256 timeElapsed = block.timestamp - market.timestampUpdateLast();
         if (timeElapsed > 0) {
