@@ -124,45 +124,6 @@ def feed(create_feed):
     yield create_feed()
 
 
-@pytest.fixture(scope="module")
-def create_factory(ovl_v1_core, gov, fee_recipient, feed_factory, ovl):
-    def create_factory(tok=ovl, recipient=fee_recipient):
-        ovl_factory = ovl_v1_core.OverlayV1Factory
-
-        # create the market factory
-        factory = gov.deploy(ovl_factory, tok, recipient)
-
-        # grant market factory token admin role
-        tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
-
-        # grant gov the governor role on token to access factory methods
-        tok.grantRole(tok.GOVERNOR_ROLE(), gov, {"from": gov})
-
-        # add feed factory as approved for market factory to deploy markets on
-        factory.addFeedFactory(feed_factory, {"from": gov})
-
-        return factory
-
-    yield create_factory
-
-
-@pytest.fixture(scope="module")
-def factory(create_factory):
-    yield create_factory()
-
-
-@pytest.fixture(scope="module")
-def create_market(ovl_v1_core, factory, feed_factory, feed, gov):
-    def create_market(feed, factory, risk_params, governance=gov):
-        tx = factory.deployMarket(feed_factory, feed, risk_params,
-                                  {"from": gov})
-        market_addr = tx.return_value
-        market = interface.IOverlayV1Market(market_addr)
-        return market
-
-    yield create_market
-
-
 @pytest.fixture(scope="module", params=[(
     1220000000000,  # k
     500000000000000000,  # lmbda
@@ -179,10 +140,44 @@ def create_market(ovl_v1_core, factory, feed_factory, feed, gov):
     100000000000000,  # minCollateral
     25000000000000,  # priceDriftUpperLimit
 )])
-def market(gov, feed, factory, ovl, create_market, request):
-    risk_params = request.param
-    yield create_market(feed=feed, factory=factory, risk_params=risk_params,
-                        governance=gov)
+def create_factory(ovl_v1_core, gov, fee_recipient, ovl, feed_factory, feed,
+                   request):
+    params = request.param
+
+    def create_factory(tok=ovl, recipient=fee_recipient, risk_params=params):
+        ovl_factory = ovl_v1_core.OverlayV1Factory
+
+        # create the market factory
+        factory = gov.deploy(ovl_factory, tok, recipient)
+
+        # grant market factory token admin role
+        tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
+
+        # grant gov the governor role on token to access factory methods
+        tok.grantRole(tok.GOVERNOR_ROLE(), gov, {"from": gov})
+
+        # add feed factory as approved for market factory to deploy markets on
+        factory.addFeedFactory(feed_factory, {"from": gov})
+
+        # deploy a market on the feed
+        _ = factory.deployMarket(feed_factory, feed, risk_params,
+                                 {"from": gov})
+
+        return factory
+
+    yield create_factory
+
+
+@pytest.fixture(scope="module")
+def factory(create_factory):
+    yield create_factory()
+
+
+@pytest.fixture(scope="module")
+def market(gov, feed, factory):
+    market_addr = factory.getMarket(feed)
+    market = interface.IOverlayV1Market(market_addr)
+    yield market
 
 
 @pytest.fixture(scope="module")
