@@ -21,7 +21,7 @@ contract OverlayV1MarketState {
         market_ = IOverlayV1Market(marketAddress);
     }
 
-    /// @notice Gets
+    /// @notice Gets the oracle data from the given feed
     function _getOracleData(address feed) private view returns (Oracle.Data memory data_) {
         data_ = IOverlayV1Feed(feed).latest();
     }
@@ -60,4 +60,6 @@ contract OverlayV1MarketState {
     }
 
     // TODO: prices, volumes, liquidatable positions, caps, mints/burns
+    // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
+    // TODO: pos views: value, pnl, notionalWithPnl, collateral ...
 }
