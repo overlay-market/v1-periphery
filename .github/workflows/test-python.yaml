@@ -30,18 +30,6 @@ jobs:
           echo WEB3_INFURA_PROJECT_ID=${{ secrets.WEB3_INFURA_PROJECT_ID }} >> .env
           echo ETHERSCAN_TOKEN=${{ secrets.ETHERSCAN_TOKEN }} >> .env
           cat .env
-          pwd
-          ls ~/
-
-      - name: Create env file for Brownie pm
-        run: |
-          touch ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
-          echo WEB3_INFURA_PROJECT_ID=${{ secrets.WEB3_INFURA_PROJECT_ID }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
-          echo ETHERSCAN_TOKEN=${{ secrets.ETHERSCAN_TOKEN }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
-          cat ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
-
-      # TODO: create env file in location of overlay-market/v1-core for brownie pm
-      # TODO: /home/runner/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
 
       - name: Cache Compiler Installations
         uses: actions/cache@v2
@@ -67,6 +55,13 @@ jobs:
 
       - name: Compile Code
         run: brownie compile --size
+
+      - name: Create env file for Brownie pm
+        run: |
+          touch ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
+          echo WEB3_INFURA_PROJECT_ID=${{ secrets.WEB3_INFURA_PROJECT_ID }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
+          echo ETHERSCAN_TOKEN=${{ secrets.ETHERSCAN_TOKEN }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
+          cat ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.1/.env
 
       - name: Run Tests
         run: brownie test -vv -s --gas
