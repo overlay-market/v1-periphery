@@ -59,7 +59,17 @@ contract OverlayV1MarketState {
         }
     }
 
-    // TODO: prices, volumes, liquidatable positions, caps, mints/burns
+    /// @notice Gets the current bid, ask, and mid price values on the
+    /// @notice Overlay market associated with the given feed address
+    /// @notice accounting for recent volume
+    /// @return bid_ as the current bid price
+    /// @return ask_ as the current ask price
+    /// @return mid_ as the current mid price
+    function prices(address feed) external view returns (uint256 bid_, uint256 ask_, uint256 mid_) {
+
+    }
+
+    // TODO: volumes, liquidatable positions, caps, mints/burns
     // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
     // TODO: pos views: value, pnl, notionalWithPnl, collateral ...
 }
