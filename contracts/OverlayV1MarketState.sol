@@ -144,7 +144,11 @@ contract OverlayV1MarketState {
         mid_ = Math.average(data.priceOverMicroWindow, data.priceOverMacroWindow);
     }
 
-    function _slippageBid(IOverlayV1Market market, Oracle.Data memory data, uint256 fractionOfCapOi) private view returns (uint256 slippageBid_) {
+    function _slippageBid(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        uint256 fractionOfCapOi
+    ) private view returns (uint256 slippageBid_) {
         // bidBefore >= bidAfter as volume lowers the bid
         uint256 bidBefore = _bid(market, data, 0);
         uint256 bidAfter = _bid(market, data, fractionOfCapOi);
@@ -153,7 +157,11 @@ contract OverlayV1MarketState {
         slippageBid_ = dBid.divDown(bidBefore);
     }
 
-    function _slippageAsk(IOverlayV1Market market, Oracle.Data memory data, uint256 fractionOfCapOi) private view returns (uint256 slippageAsk_) {
+    function _slippageAsk(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        uint256 fractionOfCapOi
+    ) private view returns (uint256 slippageAsk_) {
         // askBefore <= askAfter as volume increases the ask
         uint256 askBefore = _ask(market, data, 0);
         uint256 askAfter = _ask(market, data, fractionOfCapOi);
@@ -193,7 +201,11 @@ contract OverlayV1MarketState {
     }
 
     /// @notice TODO
-    function slippage(address feed, uint256 fractionOfCapOi) external view returns (uint256 slippageBid_, uint256 slippageAsk_) {
+    function slippage(address feed, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 slippageBid_, uint256 slippageAsk_)
+    {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
 
@@ -202,14 +214,22 @@ contract OverlayV1MarketState {
     }
 
     /// @notice TODO
-    function slippageBid(address feed, uint256 fractionOfCapOi) external view returns (uint256 slippageBid_) {
+    function slippageBid(address feed, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 slippageBid_)
+    {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
         slippageBid_ = _slippageBid(market, data, fractionOfCapOi);
     }
 
     /// @notice TODO
-    function slippageAsk(address feed, uint256 fractionOfCapOi) external view returns (uint256 slippageAsk_) {
+    function slippageAsk(address feed, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 slippageAsk_)
+    {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
         slippageAsk_ = _slippageAsk(market, data, fractionOfCapOi);
