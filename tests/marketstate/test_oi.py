@@ -1,10 +1,10 @@
 import pytest
 from pytest import approx
-from brownie import chain
+from brownie import chain, reverts
 from decimal import Decimal
 from math import exp, sqrt
 
-from .utils import mid_from_feed
+from .utils import mid_from_feed, RiskParameter
 
 
 @pytest.fixture(autouse=True)
@@ -63,7 +63,7 @@ def test_oi(market_state, market, feed, ovl, alice, bob):
 
     # calculate expect_oi_long due to funding decay since last build
     time_elapsed = Decimal(chain[-1]["timestamp"] - timestamp_update_last)
-    k = Decimal(market.k()) / Decimal(1e18)
+    k = Decimal(market.params(RiskParameter.K.value)) / Decimal(1e18)
 
     expect_oi_long *= exp(-2*k*time_elapsed)
     expect_oi_long = int(expect_oi_long)
@@ -99,3 +99,8 @@ def test_oi_is_zero_when_no_positions(market_state, feed):
     actual_oi_long, actual_oi_short = market_state.oi(feed)
     assert actual_oi_long == 0
     assert actual_oi_short == 0
+
+
+def test_oi_reverts_when_no_market(market_state, rando):
+    with reverts("OVLV1:!market"):
+        _, _ = market_state.oi(rando)

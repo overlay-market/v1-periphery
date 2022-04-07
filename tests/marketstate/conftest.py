@@ -1,10 +1,10 @@
 import pytest
-from brownie import interface, Contract, OverlayV1MarketState
+from brownie import Contract, OverlayV1MarketState, web3
 
 
 @pytest.fixture(scope="module")
 def ovl_v1_core(pm):
-    return pm("overlay-market/v1-core@1.0.0-beta.1")
+    return pm("overlay-market/v1-core@1.0.0-beta.2")
 
 
 @pytest.fixture(scope="module")
@@ -48,6 +48,21 @@ def create_token(ovl_v1_core, gov, alice, bob, request):
 
 
 @pytest.fixture(scope="module")
+def minter_role():
+    yield web3.solidityKeccak(['string'], ["MINTER"])
+
+
+@pytest.fixture(scope="module")
+def burner_role():
+    yield web3.solidityKeccak(['string'], ["BURNER"])
+
+
+@pytest.fixture(scope="module")
+def governor_role():
+    yield web3.solidityKeccak(['string'], ["GOVERNOR"])
+
+
+@pytest.fixture(scope="module")
 def ovl(create_token):
     yield create_token()
 
@@ -69,6 +84,11 @@ def uni():
 
 
 @pytest.fixture(scope="module")
+def uni_factory():
+    yield Contract.from_explorer("0x1F98431c8aD98523631AE4a59f267346ea31F984")
+
+
+@pytest.fixture(scope="module")
 def pool_daiweth_30bps():
     yield Contract.from_explorer("0xC2e9F25Be6257c210d7Adf0D4Cd6E3E881ba25f8")
 
@@ -79,19 +99,19 @@ def pool_uniweth_30bps():
     yield Contract.from_explorer("0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801")
 
 
-@pytest.fixture(scope="module", params=[(600, 3600)])
-def create_feed_factory(ovl_v1_core, gov, pool_uniweth_30bps, weth,
-                        uni, request):
-    micro, macro = request.param
-    oe_pool = pool_uniweth_30bps.address
+@pytest.fixture(scope="module", params=[(600, 3600, 300, 14)])
+def create_feed_factory(ovl_v1_core, uni_factory, gov, weth, uni, request):
+    micro, macro, cardinality, block_time = request.param
     tok = uni.address
+    uni_fact = uni_factory
 
-    def create_feed_factory(ovlweth_pool=oe_pool, ovl=tok, micro_window=micro,
-                            macro_window=macro):
-        # deploy feed factory
-        ovl_uni_feed_factory = ovl_v1_core.OverlayV1UniswapV3Factory
-        feed_factory = gov.deploy(ovl_uni_feed_factory, ovlweth_pool, ovl,
-                                  micro_window, macro_window)
+    def create_feed_factory(univ3_factory=uni_fact, ovl=tok,
+                            micro_window=micro, macro_window=macro,
+                            cardinality_min=cardinality,
+                            avg_block_time=block_time):
+        feed_factory = gov.deploy(ovl_v1_core.OverlayV1UniswapV3Factory, ovl,
+                                  univ3_factory, micro_window, macro_window,
+                                  cardinality_min, avg_block_time)
         return feed_factory
 
     yield create_feed_factory
@@ -102,19 +122,32 @@ def feed_factory(create_feed_factory):
     yield create_feed_factory()
 
 
-@pytest.fixture(scope="module", params=[(600, 3600)])
-def create_feed(feed_factory, pool_daiweth_30bps, weth, dai, alice):
-    def create_feed():
-        market_pool = pool_daiweth_30bps
-        market_base_token = weth
-        market_quote_token = dai
-        market_base_amount = 1000000000000000000  # 1e18
+@pytest.fixture(scope="module")
+def create_feed(ovl_v1_core, gov, feed_factory, pool_daiweth_30bps,
+                pool_uniweth_30bps, uni, dai, weth, request):
+    # ovlweth treated as uniweth for test purposes, feed ovl treated as uni
+    mkt_fee = pool_daiweth_30bps.fee()
+    mkt_base_tok = weth.address
+    mkt_quote_tok = dai.address
+    mkt_base_amt = 1 * 10 ** weth.decimals()
 
-        tx = feed_factory.deployFeed(market_pool, market_base_token,
-                                     market_quote_token,
-                                     market_base_amount, {"from": alice})
+    ovlweth_base_tok = weth.address
+    ovlweth_quote_tok = uni.address
+    ovlweth_fee = pool_uniweth_30bps.fee()
+
+    def create_feed(market_base_token=mkt_base_tok,
+                    market_quote_token=mkt_quote_tok,
+                    market_fee=mkt_fee,
+                    market_base_amount=mkt_base_amt,
+                    ovlx_base_token=ovlweth_base_tok,
+                    ovlx_quote_token=ovlweth_quote_tok,
+                    ovlx_fee=ovlweth_fee):
+        tx = feed_factory.deployFeed(
+            market_base_token, market_quote_token, market_fee,
+            market_base_amount, ovlx_base_token, ovlx_quote_token, ovlx_fee)
         feed_addr = tx.return_value
-        return interface.IOverlayV1Feed(feed_addr)
+        feed = ovl_v1_core.OverlayV1UniswapV3Feed.at(feed_addr)
+        return feed
 
     yield create_feed
 
@@ -135,13 +168,14 @@ def feed(create_feed):
     66670000000000000000000,  # circuitBreakerMintTarget
     100000000000000000,  # maintenanceMarginFraction
     100000000000000000,  # maintenanceMarginBurnRate
-    10000000000000000,  # liquidationFeeRate
+    50000000000000000,  # liquidationFeeRate
     750000000000000,  # tradingFeeRate
     100000000000000,  # minCollateral
     25000000000000,  # priceDriftUpperLimit
+    14,  # averageBlockTime
 )])
-def create_factory(ovl_v1_core, gov, fee_recipient, ovl, feed_factory, feed,
-                   request):
+def create_factory(ovl_v1_core, gov, governor_role, fee_recipient, ovl,
+                   feed_factory, feed, request):
     params = request.param
 
     def create_factory(tok=ovl, recipient=fee_recipient, risk_params=params):
@@ -151,17 +185,16 @@ def create_factory(ovl_v1_core, gov, fee_recipient, ovl, feed_factory, feed,
         factory = gov.deploy(ovl_factory, tok, recipient)
 
         # grant market factory token admin role
-        tok.grantRole(tok.ADMIN_ROLE(), factory, {"from": gov})
+        tok.grantRole(tok.DEFAULT_ADMIN_ROLE(), factory, {"from": gov})
 
         # grant gov the governor role on token to access factory methods
-        tok.grantRole(tok.GOVERNOR_ROLE(), gov, {"from": gov})
+        tok.grantRole(governor_role, gov, {"from": gov})
 
         # add feed factory as approved for market factory to deploy markets on
         factory.addFeedFactory(feed_factory, {"from": gov})
 
-        # deploy a market on the feed
-        _ = factory.deployMarket(feed_factory, feed, risk_params,
-                                 {"from": gov})
+        # deploy a market on feed
+        factory.deployMarket(feed_factory, feed, risk_params)
 
         return factory
 
@@ -174,9 +207,9 @@ def factory(create_factory):
 
 
 @pytest.fixture(scope="module")
-def market(gov, feed, factory):
+def market(ovl_v1_core, gov, feed, factory):
     market_addr = factory.getMarket(feed)
-    market = interface.IOverlayV1Market(market_addr)
+    market = ovl_v1_core.OverlayV1Market.at(market_addr)
     yield market
 
 
