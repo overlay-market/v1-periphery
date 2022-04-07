@@ -74,7 +74,6 @@ contract OverlayV1MarketState {
     /// @return bid_ as the current bid price
     /// @return ask_ as the current ask price
     /// @return mid_ as the current mid price from feed
-    // TODO: test
     function prices(address feed)
         external
         view
@@ -97,7 +96,11 @@ contract OverlayV1MarketState {
         mid_ = _mid(data);
     }
 
-    function _bid(IOverlayV1Market market, Oracle.Data memory data, uint256 fractionOfCapOi) private view returns (uint256 bid_) {
+    function _bid(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        uint256 fractionOfCapOi
+    ) private view returns (uint256 bid_) {
         // assemble the rolling volume snapshot
         (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotVolumeBid();
         Roller.Snapshot memory snapshot = Roller.Snapshot({
@@ -115,7 +118,11 @@ contract OverlayV1MarketState {
         bid_ = market.bid(data, volume);
     }
 
-    function _ask(IOverlayV1Market market, Oracle.Data memory data, uint256 fractionOfCapOi) private view returns (uint256 ask_) {
+    function _ask(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        uint256 fractionOfCapOi
+    ) private view returns (uint256 ask_) {
         // assemble the rolling volume snapshot
         (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotVolumeAsk();
         Roller.Snapshot memory snapshot = Roller.Snapshot({
@@ -142,7 +149,6 @@ contract OverlayV1MarketState {
     /// @notice cap on open interest trade represents
     /// @dev fractionOfCapOi (i.e. oi / capOi) is FixedPoint
     /// @return bid_ as the received bid price
-    // TODO: test
     function bid(address feed, uint256 fractionOfCapOi) external view returns (uint256 bid_) {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
@@ -154,7 +160,6 @@ contract OverlayV1MarketState {
     /// @notice cap on open interest trade represents
     /// @dev fractionOfCapOi (i.e. oi / capOi) is FixedPoint
     /// @return ask_ as the received ask price
-    // TODO: test
     function ask(address feed, uint256 fractionOfCapOi) external view returns (uint256 ask_) {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
@@ -164,7 +169,6 @@ contract OverlayV1MarketState {
     /// @notice Gets the mid price from feed used for liquidations
     /// @notice on the Overlay market associated with the given feed address
     /// @return mid_ as the received mid price
-    // TODO: test
     function mid(address feed) external view returns (uint256 mid_) {
         Oracle.Data memory data = _getOracleData(feed);
         mid_ = _mid(data);
