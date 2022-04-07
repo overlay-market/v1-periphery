@@ -144,32 +144,6 @@ contract OverlayV1MarketState {
         mid_ = Math.average(data.priceOverMicroWindow, data.priceOverMacroWindow);
     }
 
-    function _slippageBid(
-        IOverlayV1Market market,
-        Oracle.Data memory data,
-        uint256 fractionOfCapOi
-    ) private view returns (uint256 slippageBid_) {
-        // bidBefore >= bidAfter as volume lowers the bid
-        uint256 bidBefore = _bid(market, data, 0);
-        uint256 bidAfter = _bid(market, data, fractionOfCapOi);
-
-        uint256 dBid = bidBefore - bidAfter;
-        slippageBid_ = dBid.divDown(bidBefore);
-    }
-
-    function _slippageAsk(
-        IOverlayV1Market market,
-        Oracle.Data memory data,
-        uint256 fractionOfCapOi
-    ) private view returns (uint256 slippageAsk_) {
-        // askBefore <= askAfter as volume increases the ask
-        uint256 askBefore = _ask(market, data, 0);
-        uint256 askAfter = _ask(market, data, fractionOfCapOi);
-
-        uint256 dAsk = askAfter - askBefore;
-        slippageAsk_ = dAsk.divDown(askBefore);
-    }
-
     /// @notice Gets the bid price trader will receive on the Overlay market
     /// @notice associated with the given feed address given fraction of
     /// @notice cap on open interest trade represents
@@ -198,41 +172,6 @@ contract OverlayV1MarketState {
     function mid(address feed) external view returns (uint256 mid_) {
         Oracle.Data memory data = _getOracleData(feed);
         mid_ = _mid(data);
-    }
-
-    /// @notice TODO
-    function slippage(address feed, uint256 fractionOfCapOi)
-        external
-        view
-        returns (uint256 slippageBid_, uint256 slippageAsk_)
-    {
-        IOverlayV1Market market = _getMarket(feed);
-        Oracle.Data memory data = _getOracleData(feed);
-
-        slippageBid_ = _slippageBid(market, data, fractionOfCapOi);
-        slippageAsk_ = _slippageAsk(market, data, fractionOfCapOi);
-    }
-
-    /// @notice TODO
-    function slippageBid(address feed, uint256 fractionOfCapOi)
-        external
-        view
-        returns (uint256 slippageBid_)
-    {
-        IOverlayV1Market market = _getMarket(feed);
-        Oracle.Data memory data = _getOracleData(feed);
-        slippageBid_ = _slippageBid(market, data, fractionOfCapOi);
-    }
-
-    /// @notice TODO
-    function slippageAsk(address feed, uint256 fractionOfCapOi)
-        external
-        view
-        returns (uint256 slippageAsk_)
-    {
-        IOverlayV1Market market = _getMarket(feed);
-        Oracle.Data memory data = _getOracleData(feed);
-        slippageAsk_ = _slippageAsk(market, data, fractionOfCapOi);
     }
 
     // TODO: volumes, liquidatable positions, caps, mints/burns
