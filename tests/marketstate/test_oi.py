@@ -12,7 +12,7 @@ def isolation(fn_isolation):
     pass
 
 
-def test_oi(market_state, market, feed, ovl, alice, bob):
+def test_ois(market_state, market, feed, ovl, alice, bob):
     # alice build params
     input_collateral_alice = 20000000000000000000  # 20
     input_leverage_alice = 1000000000000000000  # 1
@@ -41,7 +41,7 @@ def test_oi(market_state, market, feed, ovl, alice, bob):
     notional_alice = Decimal(input_collateral_alice) \
         * Decimal(input_leverage_alice) / Decimal(1e18)
     expect_oi_long = int(notional_alice / mid)
-    actual_oi_long, actual_oi_short = market_state.oi(feed)
+    actual_oi_long, actual_oi_short = market_state.ois(feed)
 
     assert int(actual_oi_long) == approx(expect_oi_long)
     assert actual_oi_short == 0
@@ -59,7 +59,7 @@ def test_oi(market_state, market, feed, ovl, alice, bob):
     notional_bob = Decimal(input_collateral_bob) \
         * Decimal(input_leverage_bob) / Decimal(1e18)
     expect_oi_short = int(notional_bob / mid)
-    actual_oi_long, actual_oi_short = market_state.oi(feed)
+    actual_oi_long, actual_oi_short = market_state.ois(feed)
 
     # calculate expect_oi_long due to funding decay since last build
     time_elapsed = Decimal(chain[-1]["timestamp"] - timestamp_update_last)
@@ -90,17 +90,17 @@ def test_oi(market_state, market, feed, ovl, alice, bob):
     expect_oi_long = int((expect_oi_tot + expect_oi_imb) / Decimal(2))
     expect_oi_short = int((expect_oi_tot - expect_oi_imb) / Decimal(2))
 
-    actual_oi_long, actual_oi_short = market_state.oi(feed)
+    actual_oi_long, actual_oi_short = market_state.ois(feed)
     assert int(actual_oi_long) == approx(expect_oi_long)
     assert int(actual_oi_short) == approx(expect_oi_short)
 
 
 def test_oi_is_zero_when_no_positions(market_state, feed):
-    actual_oi_long, actual_oi_short = market_state.oi(feed)
+    actual_oi_long, actual_oi_short = market_state.ois(feed)
     assert actual_oi_long == 0
     assert actual_oi_short == 0
 
 
 def test_oi_reverts_when_no_market(market_state, rando):
     with reverts("OVLV1:!market"):
-        _, _ = market_state.oi(rando)
+        _, _ = market_state.ois(rando)

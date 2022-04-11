@@ -8,8 +8,11 @@ import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
 import "@overlay/v1-core/contracts/interfaces/feeds/IOverlayV1Feed.sol";
 import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
+import "@overlay/v1-core/contracts/libraries/Risk.sol";
 import "@overlay/v1-core/contracts/libraries/Roller.sol";
 
+/// @title A market state contract to view the current state of
+/// @title an Overlay market
 contract OverlayV1MarketState {
     using FixedPoint for uint256;
     using Roller for Roller.Snapshot;
@@ -33,13 +36,36 @@ contract OverlayV1MarketState {
         data_ = IOverlayV1Feed(feed).latest();
     }
 
-    /// @notice Gets the current open interest values on the Overlay market
-    /// @notice associated with the given feed address accounting for funding
-    /// @return oiLong_ as the current open interest long
-    /// @return oiShort_ as the current open interest short
-    function oi(address feed) external view returns (uint256 oiLong_, uint256 oiShort_) {
-        IOverlayV1Market market = _getMarket(feed);
+    /// @notice Computes the number of contracts (open interest) for the given
+    /// @notice amount of notional in OVL at the current mid from Oracle data
+    /// @dev OI = Q / MP; where Q = notional, MP = mid price, OI = open interest
+    /// @dev Q = N * L; where N = collateral, L = leverage
+    function _oiFromNotional(Oracle.Data memory data, uint256 notional)
+        private
+        view
+        returns (uint256 oi_)
+    {
+        uint256 midPrice = _mid(data);
+        oi_ = notional.divDown(midPrice);
+    }
 
+    /// @notice Returns the number of contracts (open interest) associated with
+    /// @notice the given mount of notional in OVL at the current mid price
+    /// @notice for the given feed address
+    /// @dev OI = Q / MP; where Q = notional, MP = mid price, OI = open interest
+    /// @dev Q = N * L; where N = collateral, L = leverage
+    /// @return oi_ as the number of contracts (open interest) to be received
+    // TODO: test
+    function oiFromNotional(address feed, uint256 notional) external view returns (uint256 oi_) {
+        Oracle.Data memory data = _getOracleData(feed);
+        oi_ = _oiFromNotional(data, notional);
+    }
+
+    function _ois(IOverlayV1Market market)
+        private
+        view
+        returns (uint256 oiLong_, uint256 oiShort_)
+    {
         // oiLong/Short values before funding adjustments
         oiLong_ = market.oiLong();
         oiShort_ = market.oiShort();
@@ -66,7 +92,75 @@ contract OverlayV1MarketState {
         }
     }
 
-    // TODO: capOi
+    /// @notice Gets the current open interest values on the Overlay market
+    /// @notice associated with the given feed address accounting for funding
+    /// @return oiLong_ as the current open interest long
+    /// @return oiShort_ as the current open interest short
+    function ois(address feed) external view returns (uint256 oiLong_, uint256 oiShort_) {
+        IOverlayV1Market market = _getMarket(feed);
+        (oiLong_, oiShort_) = _ois(market);
+    }
+
+    function _capOi(IOverlayV1Market market, Oracle.Data memory data) private view returns (uint256 capOi_) {
+        // get cap notional from risk params
+        uint256 capNotional = market.params(uint256(Risk.Parameters.CapNotional));
+
+        // adjust for bounds on cap oi from front + back-running attacks
+        capNotional = market.capNotionalAdjustedForBounds(data, capNotional);
+
+        // convert to a cap on number of contracts (open interest)
+        capOi_ = _oiFromNotional(data, capNotional);
+    }
+
+    /// @notice Gets the current cap on open interest on the Overlay market
+    /// @notice associated with the given feed address accounting for
+    /// @notice front and back-running bounds
+    /// @return capOi_ as the current open interest cap
+    // TODO: test
+    function capOi(address feed) external view returns (uint256 capOi_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+
+        capOi_ = _capOi(market, data);
+    }
+
+    /// @notice Gets the current funding rate on the Overlay market
+    /// @notice associated with the given feed address
+    /// @dev f = 2 * k * | oiLong - oiShort | / (oiLong + oiShort)
+    /// @return fundingRate_ as the current funding rate
+    // TODO: test
+    function fundingRate(address feed) external view returns (uint256) {
+        IOverlayV1Market market = _getMarket(feed);
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+
+        // determine overweight vs underweight side
+        bool isLongOverweight = oiLong > oiShort;
+        uint256 oiOverweight = isLongOverweight ? oiLong : oiShort;
+        uint256 oiUnderweight = isLongOverweight ? oiShort : oiLong;
+
+        // determine total oi and imbalance in oi
+        uint256 oiTotal = oiOverweight + oiUnderweight;
+        uint256 oiImbalance = oiOverweight - oiUnderweight;
+        if (oiTotal == 0 || oiImbalance == 0) {
+            return 0;
+        }
+
+        // Get the k risk param for the market and then calculate funding rate
+        uint256 k = market.params(uint256(Risk.Parameters.K));
+        return oiImbalance.divDown(oiTotal).mulDown(2 * k);
+    }
+
+    /// @notice Gets the fraction of the current open interest cap the
+    /// @notice given oi contracts represents on the Overlay market
+    /// @notice associated with the given feed address
+    // TODO: test
+    function fractionOfCapOi(address feed, uint256 oi) external view returns (uint256 fractionOfCapOi_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+
+        uint256 cap = _capOi(market, data);
+        fractionOfCapOi_ = oi.divDown(cap);
+    }
 
     /// @notice Gets the current bid, ask, and mid price values on the
     /// @notice Overlay market associated with the given feed address
