@@ -101,7 +101,11 @@ contract OverlayV1MarketState {
         (oiLong_, oiShort_) = _ois(market);
     }
 
-    function _capOi(IOverlayV1Market market, Oracle.Data memory data) private view returns (uint256 capOi_) {
+    function _capOi(IOverlayV1Market market, Oracle.Data memory data)
+        private
+        view
+        returns (uint256 capOi_)
+    {
         // get cap notional from risk params
         uint256 capNotional = market.params(uint256(Risk.Parameters.CapNotional));
 
@@ -154,7 +158,11 @@ contract OverlayV1MarketState {
     /// @notice given oi contracts represents on the Overlay market
     /// @notice associated with the given feed address
     // TODO: test
-    function fractionOfCapOi(address feed, uint256 oi) external view returns (uint256 fractionOfCapOi_) {
+    function fractionOfCapOi(address feed, uint256 oi)
+        external
+        view
+        returns (uint256 fractionOfCapOi_)
+    {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
 
