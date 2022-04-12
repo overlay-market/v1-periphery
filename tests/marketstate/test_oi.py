@@ -12,23 +12,6 @@ def isolation(fn_isolation):
     pass
 
 
-def test_oi_from_notional(market_state, feed):
-    notional = 20000000000000000000  # 20
-    actual = market_state.oiFromNotional(feed, notional)
-
-    data = feed.latest()
-    mid = mid_from_feed(data)
-    expect = int(Decimal(notional) * Decimal(1e18) / Decimal(mid))
-    assert expect == approx(int(actual))
-
-
-# TODO: mock feed
-# def test_oi_from_notional_reverts_when_mid_zero(market_state, feed):
-#    notional = 20000000000000000000  # 20
-#    with reverts("OVLV1:mid==0"):
-#        market_state.oiFromNotional(feed, notional)
-
-
 def test_ois(market_state, market, feed, ovl, alice, bob):
     # alice build params
     input_collateral_alice = 20000000000000000000  # 20
@@ -50,6 +33,9 @@ def test_ois(market_state, market, feed, ovl, alice, bob):
     market.build(input_collateral_alice, input_leverage_alice,
                  input_is_long_alice, input_price_limit_alice, {"from": alice})
 
+    # get the actual values
+    actual_oi_long, actual_oi_short = market_state.ois(feed)
+
     # get mid price
     data = feed.latest()
     mid = Decimal(mid_from_feed(data)) / Decimal(1e18)
@@ -58,7 +44,6 @@ def test_ois(market_state, market, feed, ovl, alice, bob):
     notional_alice = Decimal(input_collateral_alice) \
         * Decimal(input_leverage_alice) / Decimal(1e18)
     expect_oi_long = int(notional_alice / mid)
-    actual_oi_long, actual_oi_short = market_state.ois(feed)
 
     assert int(actual_oi_long) == approx(expect_oi_long)
     assert actual_oi_short == 0
@@ -68,6 +53,9 @@ def test_ois(market_state, market, feed, ovl, alice, bob):
     market.build(input_collateral_bob, input_leverage_bob,
                  input_is_long_bob, input_price_limit_bob, {"from": bob})
 
+    # get the actual values
+    actual_oi_long, actual_oi_short = market_state.ois(feed)
+
     # get mid price
     data = feed.latest()
     mid = Decimal(mid_from_feed(data)) / Decimal(1e18)
@@ -76,7 +64,6 @@ def test_ois(market_state, market, feed, ovl, alice, bob):
     notional_bob = Decimal(input_collateral_bob) \
         * Decimal(input_leverage_bob) / Decimal(1e18)
     expect_oi_short = int(notional_bob / mid)
-    actual_oi_long, actual_oi_short = market_state.ois(feed)
 
     # calculate expect_oi_long due to funding decay since last build
     time_elapsed = Decimal(chain[-1]["timestamp"] - timestamp_update_last)
@@ -93,6 +80,9 @@ def test_ois(market_state, market, feed, ovl, alice, bob):
     dt = 600
     chain.mine(timedelta=dt)
 
+    # get the actual values
+    actual_oi_long, actual_oi_short = market_state.ois(feed)
+
     expect_oi_imb = Decimal(expect_oi_long - expect_oi_short)
     expect_oi_tot = Decimal(expect_oi_long + expect_oi_short)
 
@@ -107,7 +97,6 @@ def test_ois(market_state, market, feed, ovl, alice, bob):
     expect_oi_long = int((expect_oi_tot + expect_oi_imb) / Decimal(2))
     expect_oi_short = int((expect_oi_tot - expect_oi_imb) / Decimal(2))
 
-    actual_oi_long, actual_oi_short = market_state.ois(feed)
     assert int(actual_oi_long) == approx(expect_oi_long)
     assert int(actual_oi_short) == approx(expect_oi_short)
 

@@ -50,17 +50,6 @@ contract OverlayV1MarketState {
         oi_ = notional.divDown(midPrice);
     }
 
-    /// @notice Returns the number of contracts (open interest) associated with
-    /// @notice the given mount of notional in OVL at the current mid price
-    /// @notice for the given feed address
-    /// @dev OI = Q / MP; where Q = notional, MP = mid price, OI = open interest
-    /// @dev Q = N * L; where N = collateral, L = leverage
-    /// @return oi_ as the number of contracts (open interest) to be received
-    function oiFromNotional(address feed, uint256 notional) external view returns (uint256 oi_) {
-        Oracle.Data memory data = _getOracleData(feed);
-        oi_ = _oiFromNotional(data, notional);
-    }
-
     function _ois(IOverlayV1Market market)
         private
         view
