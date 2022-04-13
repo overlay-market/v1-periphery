@@ -187,8 +187,8 @@ contract OverlayV1MarketState {
         mid_ = _mid(data);
     }
 
-    /// @notice Gets the current rolling volume on the bid of the Overlay market
-    /// @notice associated with the given feed address
+    /// @notice Gets the current rolling volume on the bid and ask sides
+    /// @notice of the Overlay market associated with the given feed address
     /// @return volumeBid_ as the current rolling volume on the bid
     /// @return volumeAsk_ as the current rolling volume on the ask
     function volumes(address feed) external view returns (uint256 volumeBid_, uint256 volumeAsk_) {
@@ -317,7 +317,7 @@ contract OverlayV1MarketState {
     /// @notice trade on the Overlay market associated with the given feed
     /// @notice address given fraction of cap on open interest trade represents
     /// @dev fractionOfCapOi (i.e. oi / capOi) is FixedPoint
-    /// @return volumeAsk_ as the volume on the bid
+    /// @return volumeAsk_ as the volume on the ask
     function volumeAsk(address feed, uint256 fractionOfCapOi)
         external
         view

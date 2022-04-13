@@ -42,7 +42,7 @@ def test_volume_bid(market_state, market, feed, initial_fraction,
     data = feed.latest()
     (_, micro_window, _, _, _, _, _, _) = data
 
-    # calculate what the bid should be given snapshot value
+    # calculate what the volume bid should be given snapshot value
     timestamp = chain[-1]['timestamp']
     window = micro_window
     value = fraction
@@ -85,7 +85,7 @@ def test_volume_ask(market_state, market, feed, initial_fraction,
     data = feed.latest()
     (_, micro_window, _, _, _, _, _, _) = data
 
-    # calculate what the ask should be given snapshot value
+    # calculate what the volume ask should be given snapshot value
     timestamp = chain[-1]['timestamp']
     window = micro_window
     value = fraction
