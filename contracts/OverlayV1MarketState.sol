@@ -187,11 +187,26 @@ contract OverlayV1MarketState {
         mid_ = _mid(data);
     }
 
-    function _bid(
+    /// @notice Gets the current rolling volume on the bid of the Overlay market
+    /// @notice associated with the given feed address
+    /// @return volumeBid_ as the current rolling volume on the bid
+    /// @return volumeAsk_ as the current rolling volume on the ask
+    function volumes(address feed) external view returns (uint256 volumeBid_, uint256 volumeAsk_) {
+        // cache market and feed data
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+
+        // use the bid, ask rolling volumes assuming zero oi being traded
+        // for current volumes
+        volumeBid_ = _volumeBid(market, data, 0);
+        volumeAsk_ = _volumeAsk(market, data, 0);
+    }
+
+    function _volumeBid(
         IOverlayV1Market market,
         Oracle.Data memory data,
         uint256 fractionOfCapOi
-    ) private view returns (uint256 bid_) {
+    ) private view returns (uint256 volume_) {
         // assemble the rolling volume snapshot
         (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotVolumeBid();
         Roller.Snapshot memory snapshot = Roller.Snapshot({
@@ -203,17 +218,26 @@ contract OverlayV1MarketState {
 
         // calculate the decay in rolling volume since last snapshot
         snapshot = snapshot.transform(block.timestamp, data.microWindow, value);
-        uint256 volume = uint256(snapshot.cumulative());
+        volume_ = uint256(snapshot.cumulative());
+    }
+
+    function _bid(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        uint256 fractionOfCapOi
+    ) private view returns (uint256 bid_) {
+        // get the rolling volume on the bid
+        uint256 volume = _volumeBid(market, data, fractionOfCapOi);
 
         // get the bid price for market
         bid_ = market.bid(data, volume);
     }
 
-    function _ask(
+    function _volumeAsk(
         IOverlayV1Market market,
         Oracle.Data memory data,
         uint256 fractionOfCapOi
-    ) private view returns (uint256 ask_) {
+    ) private view returns (uint256 volume_) {
         // assemble the rolling volume snapshot
         (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotVolumeAsk();
         Roller.Snapshot memory snapshot = Roller.Snapshot({
@@ -225,7 +249,16 @@ contract OverlayV1MarketState {
 
         // calculate the decay in rolling volume since last snapshot
         snapshot = snapshot.transform(block.timestamp, data.microWindow, value);
-        uint256 volume = uint256(snapshot.cumulative());
+        volume_ = uint256(snapshot.cumulative());
+    }
+
+    function _ask(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        uint256 fractionOfCapOi
+    ) private view returns (uint256 ask_) {
+        // get the rolling volume on the ask
+        uint256 volume = _volumeAsk(market, data, fractionOfCapOi);
 
         // get the ask price for market
         ask_ = market.ask(data, volume);
@@ -265,7 +298,7 @@ contract OverlayV1MarketState {
         mid_ = _mid(data);
     }
 
-    // TODO: volumes, liquidatable positions, caps, mints/burns
+    // TODO: liquidatable positions, caps, mints/burns
     // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
     // TODO: pos views: value, pnl, notionalWithPnl, collateral ...
 }
