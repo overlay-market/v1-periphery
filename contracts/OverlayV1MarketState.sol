@@ -298,6 +298,36 @@ contract OverlayV1MarketState {
         mid_ = _mid(data);
     }
 
+    /// @notice Gets the rolling volume on the bid after the trader places
+    /// @notice trade on the Overlay market associated with the given feed
+    /// @notice address given fraction of cap on open interest trade represents
+    /// @dev fractionOfCapOi (i.e. oi / capOi) is FixedPoint
+    /// @return volumeBid_ as the volume on the bid
+    function volumeBid(address feed, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 volumeBid_)
+    {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        volumeBid_ = _volumeBid(market, data, fractionOfCapOi);
+    }
+
+    /// @notice Gets the rolling volume on the ask after the trader places
+    /// @notice trade on the Overlay market associated with the given feed
+    /// @notice address given fraction of cap on open interest trade represents
+    /// @dev fractionOfCapOi (i.e. oi / capOi) is FixedPoint
+    /// @return volumeAsk_ as the volume on the bid
+    function volumeAsk(address feed, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 volumeAsk_)
+    {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        volumeAsk_ = _volumeAsk(market, data, fractionOfCapOi);
+    }
+
     // TODO: liquidatable positions, caps, mints/burns
     // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
     // TODO: pos views: value, pnl, notionalWithPnl, collateral ...
