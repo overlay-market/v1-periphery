@@ -1,4 +1,6 @@
+from brownie import web3
 from enum import Enum
+from hexbytes import HexBytes
 from typing import Any
 
 
@@ -29,6 +31,14 @@ def mid_from_feed(data: Any) -> float:
     bid = min(price_micro, price_macro)
     mid = (ask + bid) / 2
     return mid
+
+
+def get_position_key(owner: str, id: int) -> HexBytes:
+    """
+    Returns the position key to retrieve an individual position
+    from positions mapping
+    """
+    return web3.solidityKeccak(['address', 'uint256'], [owner, id])
 
 
 def transform_snapshot(snapshot: Any, timestamp: int, window: int,
