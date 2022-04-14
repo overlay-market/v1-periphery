@@ -17,6 +17,10 @@ contract OverlayV1MarketState {
     using FixedPoint for uint256;
     using Roller for Roller.Snapshot;
 
+    // internal constants
+    uint256 internal constant ONE = 1e18; // 18 decimal places
+
+    // immutables
     IOverlayV1Factory public immutable factory;
 
     constructor(IOverlayV1Factory _factory) {
@@ -115,6 +119,21 @@ contract OverlayV1MarketState {
         capOi_ = _capOi(market, data);
     }
 
+    /// @notice Gets the fraction of the current open interest cap the
+    /// @notice given oi contracts represents on the Overlay market
+    /// @notice associated with the given feed address
+    function fractionOfCapOi(address feed, uint256 oi) external view returns (uint256) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+
+        uint256 cap = _capOi(market, data);
+        if (cap == 0) {
+            // handle the edge case
+            return type(uint256).max;
+        }
+        return oi.divDown(cap);
+    }
+
     /// @notice Gets the current funding rate on the Overlay market
     /// @notice associated with the given feed address
     /// @dev f = 2 * k * ( oiLong - oiShort ) / (oiLong + oiShort)
@@ -144,19 +163,49 @@ contract OverlayV1MarketState {
         fundingRate_ = isLongOverweight ? int256(rate) : -int256(rate);
     }
 
-    /// @notice Gets the fraction of the current open interest cap the
-    /// @notice given oi contracts represents on the Overlay market
-    /// @notice associated with the given feed address
-    function fractionOfCapOi(address feed, uint256 oi) external view returns (uint256) {
+    /// @notice Gets the current level of the circuit breaker for the
+    /// @notice open interest cap on the Overlay market associated with
+    /// @notice the given feed address
+    /// @dev circuit breaker level is reported as fraction of capOi in FixedPoint
+    /// @return circuitBreakerLevel_ as the current circuit breaker level
+    function circuitBreakerLevel(address feed)
+        external
+        view
+        returns (uint256 circuitBreakerLevel_)
+    {
         IOverlayV1Market market = _getMarket(feed);
-        Oracle.Data memory data = _getOracleData(feed);
 
-        uint256 cap = _capOi(market, data);
-        if (cap == 0) {
-            // handle the edge case
-            return type(uint256).max;
-        }
-        return oi.divDown(cap);
+        // set cap to ONE as reporting level in terms of % of capOi
+        // = market.capNotionalAdjustedForCircuitBreaker(cap) / cap
+        circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(ONE);
+    }
+
+    /// @notice Gets the current rolling amount minted (+) or burned (-)
+    /// @notice by the Overlay market associated with the given feed address
+    /// @dev minted_ > 0 means more OVL has been minted than burned recently
+    /// @return minted_ as the current rolling amount minted
+    function minted(address feed) external view returns (int256 minted_) {
+        // cache market
+        IOverlayV1Market market = _getMarket(feed);
+
+        // assemble the rolling amount minted snapshot
+        (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotMinted();
+        Roller.Snapshot memory snapshot = Roller.Snapshot({
+            timestamp: timestamp,
+            window: window,
+            accumulator: accumulator
+        });
+
+        // Get the circuit breaker window risk param for the market
+        // and set value to zero to prep for transform
+        uint256 circuitBreakerWindow = market.params(
+            uint256(Risk.Parameters.CircuitBreakerWindow)
+        );
+        int256 value = int256(0);
+
+        // calculate the decay in rolling amount minted since last snapshot
+        snapshot = snapshot.transform(block.timestamp, circuitBreakerWindow, value);
+        minted_ = int256(snapshot.cumulative());
     }
 
     /// @notice Gets the current bid, ask, and mid price values on the
@@ -328,7 +377,7 @@ contract OverlayV1MarketState {
         volumeAsk_ = _volumeAsk(market, data, fractionOfCapOi);
     }
 
-    // TODO: liquidatable positions, caps, mints/burns
+    // TODO: liquidatable positions
     // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
     // TODO: pos views: value, pnl, notionalWithPnl, collateral ...
 }

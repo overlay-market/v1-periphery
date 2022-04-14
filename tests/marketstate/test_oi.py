@@ -1,10 +1,11 @@
 import pytest
 from pytest import approx
 from brownie import chain, reverts
+from brownie.test import given, strategy
 from decimal import Decimal
 from math import exp, sqrt
 
-from .utils import mid_from_feed, RiskParameter
+from .utils import mid_from_feed, transform_snapshot, RiskParameter
 
 
 @pytest.fixture(autouse=True)
@@ -282,3 +283,71 @@ def test_funding_rate_when_oi_zero(market_state, feed):
     expect = 0
     actual = market_state.fundingRate(feed)
     assert expect == actual
+
+
+def test_circuit_breaker_level(market_state, feed, ovl, market,
+                               alice):
+    # have alice initially build a long to init volume
+    input_collateral = 10000000000000000000
+    input_leverage = 1000000000000000000
+    input_is_long = True
+    input_price_limit = 2**256 - 1
+
+    # approve max for alice
+    ovl.approve(market, 2**256-1, {"from": alice})
+
+    # build position for alice
+    tx = market.build(input_collateral, input_leverage, input_is_long,
+                      input_price_limit, {"from": alice})
+    pos_id = tx.return_value
+
+    # unwind the position for alice
+    fraction = 1000000000000000000  # 1
+    output_price_limit = 0
+    market.unwind(pos_id, fraction, output_price_limit, {"from": alice})
+
+    # check circuit breaker level matches expect
+    one = 1000000000000000000
+    expect = int(market.capNotionalAdjustedForCircuitBreaker(one))
+    actual = int(market_state.circuitBreakerLevel(feed))
+    assert expect == approx(actual)
+
+
+# TODO: test circuit breaker level using mock feed to mint some OVL on unwind
+
+@given(dt=strategy('uint256', min_value='10', max_value='2592000'))
+def test_minted(market_state, feed, ovl, market,
+                alice, dt):
+    # have alice initially build a long to init volume
+    input_collateral = 10000000000000000000
+    input_leverage = 1000000000000000000
+    input_is_long = True
+    input_price_limit = 2**256 - 1
+
+    # approve max for alice
+    ovl.approve(market, 2**256-1, {"from": alice})
+
+    # build position for alice
+    tx = market.build(input_collateral, input_leverage, input_is_long,
+                      input_price_limit, {"from": alice})
+    pos_id = tx.return_value
+
+    # unwind the position for alice
+    fraction = 1000000000000000000  # 1
+    output_price_limit = 0
+    market.unwind(pos_id, fraction, output_price_limit, {"from": alice})
+
+    # mine the chain forward to decay snapshot
+    chain.mine(timedelta=dt)
+
+    # calculate what the minted amount should be given snapshot value
+    snap = market.snapshotMinted()
+    timestamp = chain[-1]['timestamp']
+    window = market.params(RiskParameter.CIRCUIT_BREAKER_WINDOW.value)
+    snap = transform_snapshot(snap, timestamp, window, 0)
+    (_, _, accumulator) = snap
+
+    expect = int(accumulator)
+    actual = int(market_state.minted(feed))
+
+    assert expect == approx(actual)
