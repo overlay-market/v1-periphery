@@ -17,6 +17,10 @@ contract OverlayV1MarketState {
     using FixedPoint for uint256;
     using Roller for Roller.Snapshot;
 
+    // internal constants
+    uint256 internal constant ONE = 1e18; // 18 decimal places
+
+    // immutables
     IOverlayV1Factory public immutable factory;
 
     constructor(IOverlayV1Factory _factory) {
@@ -158,6 +162,25 @@ contract OverlayV1MarketState {
         }
         return oi.divDown(cap);
     }
+
+    /// @notice Gets the current level of the circuit breaker for the
+    /// @notice open interest cap on the Overlay market associated with
+    /// @notice the given feed address
+    /// @dev circuit breaker level is reported as fraction of capOi in FixedPoint
+    /// @return circuitBreakerLevel_ as the current circuit breaker level
+    function circuitBreakerLevel(address feed)
+        external
+        view
+        returns (uint256 circuitBreakerLevel_)
+    {
+        IOverlayV1Market market = _getMarket(feed);
+
+        // set cap to ONE as reporting level in terms of % of capOi
+        // = market.capNotionalAdjustedForCircuitBreaker(cap) / cap
+        circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(ONE);
+    }
+
+    // TODO: recent mints/burns
 
     /// @notice Gets the current bid, ask, and mid price values on the
     /// @notice Overlay market associated with the given feed address
@@ -328,7 +351,7 @@ contract OverlayV1MarketState {
         volumeAsk_ = _volumeAsk(market, data, fractionOfCapOi);
     }
 
-    // TODO: liquidatable positions, caps, mints/burns
+    // TODO: liquidatable positions
     // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
     // TODO: pos views: value, pnl, notionalWithPnl, collateral ...
 }
