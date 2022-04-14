@@ -4,7 +4,7 @@ from brownie import chain, reverts
 from decimal import Decimal
 from math import exp, sqrt
 
-from .utils import mid_from_feed, RiskParameter
+from .utils import mid_from_feed, transform_snapshot, RiskParameter
 
 
 @pytest.fixture(autouse=True)
@@ -305,15 +305,45 @@ def test_circuit_breaker_level(market_state, feed, ovl, market,
     output_price_limit = 0
     market.unwind(pos_id, fraction, output_price_limit, {"from": alice})
 
-    # check snapshotMinted registers the burned losses from trade
-    snap = market.snapshotMinted()
-    (_, _, accumulator) = snap
-
     # check circuit breaker level matches expect
     one = 1000000000000000000
     expect = market.capNotionalAdjustedForCircuitBreaker(one)
     actual = market_state.circuitBreakerLevel(feed)
-    assert expect == actual
+    assert expect == approx(int(actual))
 
 
 # TODO: test circuit breaker level using mock feed to mint some OVL on unwind
+
+
+def test_minted(market_state, feed, ovl, market,
+                alice):
+    # have alice initially build a long to init volume
+    input_collateral = 10000000000000000000
+    input_leverage = 1000000000000000000
+    input_is_long = True
+    input_price_limit = 2**256 - 1
+
+    # approve max for alice
+    ovl.approve(market, 2**256-1, {"from": alice})
+
+    # build position for alice
+    tx = market.build(input_collateral, input_leverage, input_is_long,
+                      input_price_limit, {"from": alice})
+    pos_id = tx.return_value
+
+    # unwind the position for alice
+    fraction = 1000000000000000000  # 1
+    output_price_limit = 0
+    market.unwind(pos_id, fraction, output_price_limit, {"from": alice})
+
+    # calculate what the minted amount should be given snapshot value
+    snap = market.snapshotMinted()
+    timestamp = chain[-1]['timestamp']
+    window = market.params(RiskParameter.CIRCUIT_BREAKER_WINDOW.value)
+    snap = transform_snapshot(snap, timestamp, window, 0)
+    (_, _, accumulator) = snap
+
+    expect = int(accumulator)
+    actual = market_state.minted(feed)
+
+    assert expect == approx(int(actual))
