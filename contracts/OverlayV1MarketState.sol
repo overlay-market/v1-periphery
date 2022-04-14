@@ -180,7 +180,31 @@ contract OverlayV1MarketState {
         circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(ONE);
     }
 
-    // TODO: recent mints/burns
+    /// @notice Gets the current rolling amount minted (+) or burned (-)
+    /// @notice by the Overlay market associated with the given feed address
+    /// @dev minted_ > 0 means more OVL has been minted than burned recently
+    /// @return minted_ as the current rolling amount minted
+    function minted(address feed) external view returns (int256 minted_) {
+        // cache market
+        IOverlayV1Market market = _getMarket(feed);
+
+        // assemble the rolling amount minted snapshot
+        (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotMinted();
+        Roller.Snapshot memory snapshot = Roller.Snapshot({
+            timestamp: timestamp,
+            window: window,
+            accumulator: accumulator
+        });
+
+        // Get the circuit breaker window risk param for the market
+        // and set value to zero to prep for transform
+        uint256 circuitBreakerWindow = market.params(uint256(Risk.Parameters.CircuitBreakerWindow));
+        int256 value = int256(0);
+
+        // calculate the decay in rolling amount minted since last snapshot
+        snapshot = snapshot.transform(block.timestamp, circuitBreakerWindow, value);
+        minted_ = int256(snapshot.cumulative());
+    }
 
     /// @notice Gets the current bid, ask, and mid price values on the
     /// @notice Overlay market associated with the given feed address
