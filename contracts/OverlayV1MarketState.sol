@@ -119,6 +119,21 @@ contract OverlayV1MarketState {
         capOi_ = _capOi(market, data);
     }
 
+    /// @notice Gets the fraction of the current open interest cap the
+    /// @notice given oi contracts represents on the Overlay market
+    /// @notice associated with the given feed address
+    function fractionOfCapOi(address feed, uint256 oi) external view returns (uint256) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+
+        uint256 cap = _capOi(market, data);
+        if (cap == 0) {
+            // handle the edge case
+            return type(uint256).max;
+        }
+        return oi.divDown(cap);
+    }
+
     /// @notice Gets the current funding rate on the Overlay market
     /// @notice associated with the given feed address
     /// @dev f = 2 * k * ( oiLong - oiShort ) / (oiLong + oiShort)
@@ -146,21 +161,6 @@ contract OverlayV1MarketState {
 
         // return mag + sign for funding rate
         fundingRate_ = isLongOverweight ? int256(rate) : -int256(rate);
-    }
-
-    /// @notice Gets the fraction of the current open interest cap the
-    /// @notice given oi contracts represents on the Overlay market
-    /// @notice associated with the given feed address
-    function fractionOfCapOi(address feed, uint256 oi) external view returns (uint256) {
-        IOverlayV1Market market = _getMarket(feed);
-        Oracle.Data memory data = _getOracleData(feed);
-
-        uint256 cap = _capOi(market, data);
-        if (cap == 0) {
-            // handle the edge case
-            return type(uint256).max;
-        }
-        return oi.divDown(cap);
     }
 
     /// @notice Gets the current level of the circuit breaker for the
