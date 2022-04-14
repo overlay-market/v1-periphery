@@ -198,7 +198,9 @@ contract OverlayV1MarketState {
 
         // Get the circuit breaker window risk param for the market
         // and set value to zero to prep for transform
-        uint256 circuitBreakerWindow = market.params(uint256(Risk.Parameters.CircuitBreakerWindow));
+        uint256 circuitBreakerWindow = market.params(
+            uint256(Risk.Parameters.CircuitBreakerWindow)
+        );
         int256 value = int256(0);
 
         // calculate the decay in rolling amount minted since last snapshot
