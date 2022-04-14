@@ -1,6 +1,7 @@
 import pytest
 from pytest import approx
 from brownie import chain, reverts
+from brownie.test import given, strategy
 from decimal import Decimal
 from math import exp, sqrt
 
@@ -307,16 +308,16 @@ def test_circuit_breaker_level(market_state, feed, ovl, market,
 
     # check circuit breaker level matches expect
     one = 1000000000000000000
-    expect = market.capNotionalAdjustedForCircuitBreaker(one)
-    actual = market_state.circuitBreakerLevel(feed)
-    assert expect == approx(int(actual))
+    expect = int(market.capNotionalAdjustedForCircuitBreaker(one))
+    actual = int(market_state.circuitBreakerLevel(feed))
+    assert expect == approx(actual)
 
 
 # TODO: test circuit breaker level using mock feed to mint some OVL on unwind
 
-
+@given(dt=strategy('uint256', min_value='10', max_value='2592000'))
 def test_minted(market_state, feed, ovl, market,
-                alice):
+                alice, dt):
     # have alice initially build a long to init volume
     input_collateral = 10000000000000000000
     input_leverage = 1000000000000000000
@@ -336,6 +337,9 @@ def test_minted(market_state, feed, ovl, market,
     output_price_limit = 0
     market.unwind(pos_id, fraction, output_price_limit, {"from": alice})
 
+    # mine the chain forward to decay snapshot
+    chain.mine(timedelta=dt)
+
     # calculate what the minted amount should be given snapshot value
     snap = market.snapshotMinted()
     timestamp = chain[-1]['timestamp']
@@ -344,6 +348,6 @@ def test_minted(market_state, feed, ovl, market,
     (_, _, accumulator) = snap
 
     expect = int(accumulator)
-    actual = market_state.minted(feed)
+    actual = int(market_state.minted(feed))
 
-    assert expect == approx(int(actual))
+    assert expect == approx(actual)
