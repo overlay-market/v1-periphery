@@ -27,9 +27,13 @@ contract OverlayV1State {
         factory = _factory;
     }
 
+    /*///////////////////////////////////////////////////////////////
+                        FEED GETTER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Gets the Overlay market address for the given feed
     /// @dev reverts if market doesn't exist
-    function _getMarket(address feed) private view returns (IOverlayV1Market market_) {
+    function _getMarket(address feed) internal view returns (IOverlayV1Market market_) {
         address marketAddress = factory.getMarket(feed);
         require(marketAddress != address(0), "OVLV1:!market");
         market_ = IOverlayV1Market(marketAddress);
@@ -43,7 +47,7 @@ contract OverlayV1State {
     }
 
     /// @notice Gets the oracle data from the given feed
-    function _getOracleData(address feed) private view returns (Oracle.Data memory data_) {
+    function _getOracleData(address feed) internal view returns (Oracle.Data memory data_) {
         data_ = IOverlayV1Feed(feed).latest();
     }
 
@@ -59,7 +63,7 @@ contract OverlayV1State {
         IOverlayV1Market market,
         address owner,
         uint256 id
-    ) private view returns (Position.Info memory position_) {
+    ) internal view returns (Position.Info memory position_) {
         bytes32 key = keccak256(abi.encodePacked(owner, id));
         (
             uint96 notional,
@@ -93,12 +97,16 @@ contract OverlayV1State {
         position_ = _getPosition(market, owner, id);
     }
 
+    /*///////////////////////////////////////////////////////////////
+                AGGREGATE OPEN INTEREST VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Computes the number of contracts (open interest) for the given
     /// @notice amount of notional in OVL at the current mid from Oracle data
     /// @dev OI = Q / MP; where Q = notional, MP = mid price, OI = open interest
     /// @dev Q = N * L; where N = collateral, L = leverage
     function _oiFromNotional(Oracle.Data memory data, uint256 notional)
-        private
+        internal
         view
         returns (uint256 oi_)
     {
@@ -108,7 +116,7 @@ contract OverlayV1State {
     }
 
     function _ois(IOverlayV1Market market)
-        private
+        internal
         view
         returns (uint256 oiLong_, uint256 oiShort_)
     {
@@ -148,7 +156,7 @@ contract OverlayV1State {
     }
 
     function _capOi(IOverlayV1Market market, Oracle.Data memory data)
-        private
+        internal
         view
         returns (uint256 capOi_)
     {
@@ -178,7 +186,7 @@ contract OverlayV1State {
         IOverlayV1Market market,
         Oracle.Data memory data,
         uint256 oi
-    ) private view returns (uint256) {
+    ) internal view returns (uint256) {
         // simply oi / capOi
         uint256 cap = _capOi(market, data);
         if (cap == 0) {
@@ -277,6 +285,10 @@ contract OverlayV1State {
         minted_ = int256(snapshot.cumulative());
     }
 
+    /*///////////////////////////////////////////////////////////////
+                    PRICE, VOLUME VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Gets the current bid, ask, and mid price values on the
     /// @notice Overlay market associated with the given feed address
     /// @notice accounting for recent volume
@@ -324,7 +336,7 @@ contract OverlayV1State {
         IOverlayV1Market market,
         Oracle.Data memory data,
         uint256 fractionOfCapOi
-    ) private view returns (uint256 volume_) {
+    ) internal view returns (uint256 volume_) {
         // assemble the rolling volume snapshot
         (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotVolumeBid();
         Roller.Snapshot memory snapshot = Roller.Snapshot({
@@ -343,7 +355,7 @@ contract OverlayV1State {
         IOverlayV1Market market,
         Oracle.Data memory data,
         uint256 fractionOfCapOi
-    ) private view returns (uint256 bid_) {
+    ) internal view returns (uint256 bid_) {
         // get the rolling volume on the bid
         uint256 volume = _volumeBid(market, data, fractionOfCapOi);
 
@@ -355,7 +367,7 @@ contract OverlayV1State {
         IOverlayV1Market market,
         Oracle.Data memory data,
         uint256 fractionOfCapOi
-    ) private view returns (uint256 volume_) {
+    ) internal view returns (uint256 volume_) {
         // assemble the rolling volume snapshot
         (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotVolumeAsk();
         Roller.Snapshot memory snapshot = Roller.Snapshot({
@@ -374,7 +386,7 @@ contract OverlayV1State {
         IOverlayV1Market market,
         Oracle.Data memory data,
         uint256 fractionOfCapOi
-    ) private view returns (uint256 ask_) {
+    ) internal view returns (uint256 ask_) {
         // get the rolling volume on the ask
         uint256 volume = _volumeAsk(market, data, fractionOfCapOi);
 
@@ -382,7 +394,7 @@ contract OverlayV1State {
         ask_ = market.ask(data, volume);
     }
 
-    function _mid(Oracle.Data memory data) private view returns (uint256 mid_) {
+    function _mid(Oracle.Data memory data) internal view returns (uint256 mid_) {
         mid_ = Math.average(data.priceOverMicroWindow, data.priceOverMacroWindow);
     }
 
@@ -446,6 +458,10 @@ contract OverlayV1State {
         volumeAsk_ = _volumeAsk(market, data, fractionOfCapOi);
     }
 
+    /*///////////////////////////////////////////////////////////////
+                        POSITION VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     // TODO: pos views: value, pnl, notionalWithPnl, collateral, liquidatable
     // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
 
@@ -453,6 +469,7 @@ contract OverlayV1State {
     /// @notice market associated with the given feed address for the given
     /// @notice position owner, id
     /// @return oi_ as the current open interest occupied by the position
+    // TODO: test
     function oi(
         address feed,
         address owner,
@@ -479,10 +496,95 @@ contract OverlayV1State {
         oi_ = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
     }
 
+    /// @notice Gets the current debt of the position on the Overlay
+    /// @notice market associated with the given feed address for the given
+    /// @notice position owner, id
+    /// @return debt_ as the current debt taken on by the position
+    // TODO: test
+    function debt(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 debt_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+
+        // assume entire position value such that fraction = ONE
+        uint256 fraction = FixedPoint.ONE;
+
+        // return the debt
+        debt_ = position.debtCurrent(fraction);
+    }
+
+    /// @notice Gets the current cost of the position on the Overlay
+    /// @notice market associated with the given feed address for the given
+    /// @notice position owner, id
+    /// @return cost_ as the cost to build the position
+    // TODO: test
+    function cost(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 cost_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+
+        // assume entire position value such that fraction = ONE
+        uint256 fraction = FixedPoint.ONE;
+
+        // return the cost
+        cost_ = position.cost(fraction);
+    }
+
+    /// @notice Gets the current collateral backing the position on the
+    /// @notice Overlay market associated with the given feed address
+    /// @notice for the given position owner, id
+    /// @dev N(t) = Q * (OI(t) / OI(0)) - D; where Q = notional at build,
+    /// @dev OI(t) = current open interest, OI(0) = open interest at build,
+    /// @dev D = debt at build
+    /// @return collateral_ as the current collateral backing the position
+    // TODO: test
+    function collateral(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 collateral_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+
+        // assume entire position value such that fraction = ONE
+        uint256 fraction = FixedPoint.ONE;
+
+        // get attributes needed to calculate current collateral amount:
+        // notionalInitial, debtCurrent, oiInitial, oiCurrent
+        uint256 q = position.notionalInitial(fraction);
+        uint256 d = position.debtCurrent(fraction);
+        uint256 oiInitial = position.oiInitial(fraction);
+
+        // calculate oiCurrent from aggregate oi values
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+
+        // aggregate oi values on market
+        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = position.isLong
+            ? market.oiLongShares()
+            : market.oiShortShares();
+
+        // position's current oi factoring in funding
+        uint256 oiCurrent = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+
+        // return the collateral
+        collateral_ = q.mulUp(oiCurrent).divUp(oiInitial).subFloor(d);
+    }
+
     /// @notice Gets the current value of the position on the Overlay market
     /// @notice associated with the given feed address for the given
     /// @notice position owner, id
     /// @return value_ as the current value of the position
+    // TODO: test
     function value(
         address feed,
         address owner,
@@ -520,6 +622,56 @@ contract OverlayV1State {
 
         // return current value
         value_ = position.value(
+            fraction,
+            oiTotalOnSide,
+            oiTotalSharesOnSide,
+            currentPrice,
+            capPayoff
+        );
+    }
+
+    /// @notice Gets the current notional of the position on the Overlay market
+    /// @notice associated with the given feed address for the given
+    /// @notice position owner, id (accounts for PnL)
+    /// @return notional_ as the current notional of the position
+    // TODO: test
+    function notional(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 notional_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+
+        // assume entire position value such that fraction = ONE
+        uint256 fraction = FixedPoint.ONE;
+
+        // get the attributes needed to calculate position notional:
+        // oiLong/Short, oiLongShares/oiShortShares, price, capPayoff
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+
+        // aggregate oi values on market
+        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = position.isLong
+            ? market.oiLongShares()
+            : market.oiShortShares();
+
+        // position's current oi factoring in funding
+        uint256 oi = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+
+        // current price is price position would receive if unwound
+        // longs get the bid on unwind, shorts get the ask
+        uint256 volume = _fractionOfCapOi(market, data, oi);
+        uint256 currentPrice = position.isLong
+            ? _bid(market, data, volume)
+            : _ask(market, data, volume);
+
+        // get cap payoff from risk params
+        uint256 capPayoff = market.params(uint256(Risk.Parameters.CapPayoff));
+
+        // return current notional with PnL
+        notional_ = position.notionalWithPnl(
             fraction,
             oiTotalOnSide,
             oiTotalSharesOnSide,
