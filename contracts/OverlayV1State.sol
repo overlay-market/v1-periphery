@@ -15,15 +15,10 @@ import "@overlay/v1-core/contracts/libraries/Roller.sol";
 
 /// @title A market state contract to view the current state of
 /// @title an Overlay market
-// TODO: separate out into oi, price, position contracts w internal views
-// TODO: then have OverlayV1State inherit and expose as external (?)
 contract OverlayV1State {
     using FixedPoint for uint256;
     using Position for Position.Info;
     using Roller for Roller.Snapshot;
-
-    // internal constants
-    uint256 internal constant ONE = 1e18; // 18 decimal places
 
     // immutables
     IOverlayV1Factory public immutable factory;
@@ -179,7 +174,11 @@ contract OverlayV1State {
 
     /// @dev fractionOfCapOi = oi / capOi as FixedPoint
     /// @dev handles capOi == 0 edge case by returning type(uint256).max
-    function _fractionOfCapOi(IOverlayV1Market market, Oracle.Data memory data, uint256 oi) private view returns (uint256) {
+    function _fractionOfCapOi(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        uint256 oi
+    ) private view returns (uint256) {
         // simply oi / capOi
         uint256 cap = _capOi(market, data);
         if (cap == 0) {
@@ -194,7 +193,11 @@ contract OverlayV1State {
     /// @notice associated with the given feed address
     /// @dev fractionOfCapOi = oi / capOi is FixedPoint
     /// @return fractionOfCapOi_ as fraction of open interest cap given oi is
-    function fractionOfCapOi(address feed, uint256 oi) external view returns (uint256 fractionOfCapOi_) {
+    function fractionOfCapOi(address feed, uint256 oi)
+        external
+        view
+        returns (uint256 fractionOfCapOi_)
+    {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
         fractionOfCapOi_ = _fractionOfCapOi(market, data, oi);
@@ -243,7 +246,7 @@ contract OverlayV1State {
 
         // set cap to ONE as reporting level in terms of % of capOi
         // = market.capNotionalAdjustedForCircuitBreaker(cap) / cap
-        circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(ONE);
+        circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(FixedPoint.ONE);
     }
 
     /// @notice Gets the current rolling amount minted (+) or burned (-)
@@ -446,18 +449,21 @@ contract OverlayV1State {
     // TODO: pos views: value, pnl, notionalWithPnl, collateral, liquidatable
     // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
 
-
     /// @notice Gets the current open interest of the position on the Overlay
     /// @notice market associated with the given feed address for the given
     /// @notice position owner, id
     /// @return oi_ as the current open interest occupied by the position
-    function oi(address feed, address owner, uint256 id) external view returns (uint256 oi_) {
+    function oi(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 oi_) {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
 
         // assume entire position value such that fraction = ONE
-        uint256 fraction = ONE;
+        uint256 fraction = FixedPoint.ONE;
 
         // get the attributes needed to calculate position oi:
         // oiLong/Short, oiLongShares/oiShortShares
@@ -465,7 +471,9 @@ contract OverlayV1State {
 
         // aggregate oi values on market
         uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong ? market.oiLongShares() : market.oiShortShares();
+        uint256 oiTotalSharesOnSide = position.isLong
+            ? market.oiLongShares()
+            : market.oiShortShares();
 
         // return the current oi
         oi_ = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
@@ -475,13 +483,17 @@ contract OverlayV1State {
     /// @notice associated with the given feed address for the given
     /// @notice position owner, id
     /// @return value_ as the current value of the position
-    function value(address feed, address owner, uint256 id) external view returns (uint256 value_) {
+    function value(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 value_) {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
 
         // assume entire position value such that fraction = ONE
-        uint256 fraction = ONE;
+        uint256 fraction = FixedPoint.ONE;
 
         // get the attributes needed to calculate position value:
         // oiLong/Short, oiLongShares/oiShortShares, price, capPayoff
@@ -489,7 +501,9 @@ contract OverlayV1State {
 
         // aggregate oi values on market
         uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong ? market.oiLongShares() : market.oiShortShares();
+        uint256 oiTotalSharesOnSide = position.isLong
+            ? market.oiLongShares()
+            : market.oiShortShares();
 
         // position's current oi factoring in funding
         uint256 oi = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
@@ -497,12 +511,20 @@ contract OverlayV1State {
         // current price is price position would receive if unwound
         // longs get the bid on unwind, shorts get the ask
         uint256 volume = _fractionOfCapOi(market, data, oi);
-        uint256 currentPrice = position.isLong ? _bid(market, data, volume) : _ask(market, data, volume);
+        uint256 currentPrice = position.isLong
+            ? _bid(market, data, volume)
+            : _ask(market, data, volume);
 
         // get cap payoff from risk params
         uint256 capPayoff = market.params(uint256(Risk.Parameters.CapPayoff));
 
         // return current value
-        value_ = position.value(fraction, oiTotalOnSide, oiTotalSharesOnSide, currentPrice, capPayoff);
+        value_ = position.value(
+            fraction,
+            oiTotalOnSide,
+            oiTotalSharesOnSide,
+            currentPrice,
+            capPayoff
+        );
     }
 }
