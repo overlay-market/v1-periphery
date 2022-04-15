@@ -1,5 +1,5 @@
 import pytest
-from brownie import Contract, OverlayV1MarketState, web3
+from brownie import Contract, OverlayV1State, web3
 
 
 @pytest.fixture(scope="module")
@@ -214,14 +214,14 @@ def market(ovl_v1_core, gov, feed, factory):
 
 
 @pytest.fixture(scope="module")
-def create_market_state(rando, ovl):
-    def create_market_state(factory, deployer=rando):
-        market_state = deployer.deploy(OverlayV1MarketState, factory)
-        return market_state
+def create_state(rando, ovl):
+    def create_state(factory, deployer=rando):
+        state = deployer.deploy(OverlayV1State, factory)
+        return state
 
-    yield create_market_state
+    yield create_state
 
 
 @pytest.fixture(scope="module")
-def market_state(create_market_state, factory):
-    yield create_market_state(factory)
+def state(create_state, factory):
+    yield create_state(factory)

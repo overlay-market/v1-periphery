@@ -12,11 +12,11 @@ def isolation(fn_isolation):
     pass
 
 
-def test_mid(market_state, market, feed):
+def test_mid(state, market, feed):
     data = feed.latest()
 
     expect = int(mid_from_feed(data))
-    actual = market_state.mid(feed)
+    actual = state.mid(feed)
 
     assert expect == approx(actual)
 
@@ -24,7 +24,7 @@ def test_mid(market_state, market, feed):
 @given(
     fraction=strategy('decimal', min_value='0.001', max_value='2.000',
                       places=3))
-def test_bid(market_state, market, feed, fraction):
+def test_bid(state, market, feed, fraction):
     fraction = int(fraction * Decimal(1e18))
     snap = market.snapshotVolumeBid()
     data = feed.latest()
@@ -38,7 +38,7 @@ def test_bid(market_state, market, feed, fraction):
     (_, _, accumulator) = snap
 
     expect = market.bid(data, accumulator)
-    actual = market_state.bid(feed, fraction)
+    actual = state.bid(feed, fraction)
     assert expect == actual
 
 
@@ -48,7 +48,7 @@ def test_bid(market_state, market, feed, fraction):
     peek_fraction=strategy('decimal', min_value='0.001', max_value='0.500',
                            places=3),
     dt=strategy('uint256', min_value='10', max_value='600'))
-def test_bid_when_oi_on_market(market_state, market, feed, initial_fraction,
+def test_bid_when_oi_on_market(state, market, feed, initial_fraction,
                                peek_fraction, dt, ovl, bob):
     # have bob initially build a short to init volume
     cap_notional = market.params(RiskParameter.CAP_NOTIONAL.value)
@@ -80,14 +80,14 @@ def test_bid_when_oi_on_market(market_state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(market.bid(data, accumulator))
-    actual = int(market_state.bid(feed, fraction))
+    actual = int(state.bid(feed, fraction))
     assert expect == approx(actual)
 
 
 @given(
     fraction=strategy('decimal', min_value='0.001', max_value='2.000',
                       places=3))
-def test_ask(market_state, market, feed, fraction):
+def test_ask(state, market, feed, fraction):
     fraction = int(fraction * Decimal(1e18))
     snap = market.snapshotVolumeAsk()
     data = feed.latest()
@@ -101,7 +101,7 @@ def test_ask(market_state, market, feed, fraction):
     (_, _, accumulator) = snap
 
     expect = market.ask(data, accumulator)
-    actual = market_state.ask(feed, fraction)
+    actual = state.ask(feed, fraction)
     assert expect == actual
 
 
@@ -111,7 +111,7 @@ def test_ask(market_state, market, feed, fraction):
     peek_fraction=strategy('decimal', min_value='0.001', max_value='0.500',
                            places=3),
     dt=strategy('uint256', min_value='10', max_value='600'))
-def test_ask_when_oi_on_market(market_state, market, feed, initial_fraction,
+def test_ask_when_oi_on_market(state, market, feed, initial_fraction,
                                peek_fraction, dt, ovl, alice):
     # have alice initially build a long to init volume
     cap_notional = market.params(RiskParameter.CAP_NOTIONAL.value)
@@ -143,11 +143,11 @@ def test_ask_when_oi_on_market(market_state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(market.ask(data, accumulator))
-    actual = int(market_state.ask(feed, fraction))
+    actual = int(state.ask(feed, fraction))
     assert expect == approx(actual)
 
 
-def test_prices(market_state, market, feed):
+def test_prices(state, market, feed):
     snap_bid = market.snapshotVolumeBid()
     snap_ask = market.snapshotVolumeAsk()
     data = feed.latest()
@@ -169,7 +169,7 @@ def test_prices(market_state, market, feed):
     expect_ask = int(market.ask(data, accumulator_ask))
     expect_mid = int(mid_from_feed(data))
 
-    (actual_bid, actual_ask, actual_mid) = market_state.prices(feed)
+    (actual_bid, actual_ask, actual_mid) = state.prices(feed)
 
     assert expect_bid == approx(int(actual_bid))
     assert expect_ask == approx(int(actual_ask))
@@ -182,7 +182,7 @@ def test_prices(market_state, market, feed):
     initial_fraction_bob=strategy('decimal', min_value='0.001',
                                   max_value='0.500', places=3),
     dt=strategy('uint256', min_value='10', max_value='600'))
-def test_prices_when_oi_on_market(market_state, market, feed, ovl, alice, bob,
+def test_prices_when_oi_on_market(state, market, feed, ovl, alice, bob,
                                   initial_fraction_alice, initial_fraction_bob,
                                   dt):
     # have alice and bob initially build a long and short to init volume
@@ -231,7 +231,7 @@ def test_prices_when_oi_on_market(market_state, market, feed, ovl, alice, bob,
     expect_ask = int(market.ask(data, accumulator_ask))
     expect_mid = int(mid_from_feed(data))
 
-    (actual_bid, actual_ask, actual_mid) = market_state.prices(feed)
+    (actual_bid, actual_ask, actual_mid) = state.prices(feed)
 
     assert expect_bid == approx(int(actual_bid))
     assert expect_ask == approx(int(actual_ask))

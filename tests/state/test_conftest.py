@@ -93,5 +93,5 @@ def test_market_fixture(market, feed, ovl, factory, gov,
     assert market.timestampUpdateLast() == chain[-1]["timestamp"]
 
 
-def test_market_state_fixture(factory, market_state):
-    assert market_state.factory() == factory
+def test_state_fixture(factory, state):
+    assert state.factory() == factory
