@@ -274,7 +274,6 @@ abstract contract OverlayV1PositionState is
     /// @notice associated with the given feed address for the given
     /// @notice position owner, id
     /// @return value_ as the current value of the position
-    // TODO: test
     function value(
         address feed,
         address owner,
@@ -290,7 +289,6 @@ abstract contract OverlayV1PositionState is
     /// @notice associated with the given feed address for the given
     /// @notice position owner, id (accounts for PnL)
     /// @return notional_ as the current notional of the position
-    // TODO: test
     function notional(
         address feed,
         address owner,
