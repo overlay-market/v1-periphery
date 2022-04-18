@@ -1,4 +1,5 @@
 from brownie import web3
+from decimal import Decimal
 from enum import Enum
 from hexbytes import HexBytes
 from typing import Any
@@ -39,6 +40,18 @@ def get_position_key(owner: str, id: int) -> HexBytes:
     from positions mapping
     """
     return web3.solidityKeccak(['address', 'uint256'], [owner, id])
+
+
+def position_entry_price(position: Any) -> float:
+    """
+    Returns the position entry price from an individual position tuple.
+
+    entry = ratio * mid = ratio * (notional / oi)
+    """
+    (notional, debt, ratio, is_long, liquidated, oi_shares) = position
+    ratio_fixed_point = Decimal(ratio) * Decimal(1e4)
+    entry = float(ratio_fixed_point * Decimal(notional) / Decimal(oi_shares))
+    return entry
 
 
 def transform_snapshot(snapshot: Any, timestamp: int, window: int,

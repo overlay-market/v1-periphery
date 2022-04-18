@@ -18,7 +18,7 @@ def isolation(fn_isolation):
     peek_fraction=strategy('decimal', min_value='0.001', max_value='0.500',
                            places=3),
     dt=strategy('uint256', min_value='10', max_value='600'))
-def test_volume_bid(market_state, market, feed, initial_fraction,
+def test_volume_bid(state, market, feed, initial_fraction,
                     peek_fraction, dt, ovl, bob):
     # have bob initially build a short to init volume
     cap_notional = market.params(RiskParameter.CAP_NOTIONAL.value)
@@ -50,7 +50,7 @@ def test_volume_bid(market_state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(accumulator)
-    actual = int(market_state.volumeBid(feed, fraction))
+    actual = int(state.volumeBid(feed, fraction))
 
     assert expect == approx(actual)
 
@@ -61,7 +61,7 @@ def test_volume_bid(market_state, market, feed, initial_fraction,
     peek_fraction=strategy('decimal', min_value='0.001', max_value='0.500',
                            places=3),
     dt=strategy('uint256', min_value='10', max_value='600'))
-def test_volume_ask(market_state, market, feed, initial_fraction,
+def test_volume_ask(state, market, feed, initial_fraction,
                     peek_fraction, dt, ovl, alice):
     # have alice initially build a long to init volume
     cap_notional = market.params(RiskParameter.CAP_NOTIONAL.value)
@@ -93,7 +93,7 @@ def test_volume_ask(market_state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(accumulator)
-    actual = int(market_state.volumeAsk(feed, fraction))
+    actual = int(state.volumeAsk(feed, fraction))
 
     assert expect == approx(actual)
 
@@ -104,7 +104,7 @@ def test_volume_ask(market_state, market, feed, initial_fraction,
     initial_fraction_bob=strategy('decimal', min_value='0.001',
                                   max_value='0.500', places=3),
     dt=strategy('uint256', min_value='10', max_value='600'))
-def test_volumes(market_state, market, feed, ovl, alice, bob,
+def test_volumes(state, market, feed, ovl, alice, bob,
                  initial_fraction_alice, initial_fraction_bob,
                  dt):
     # have alice and bob initially build a long and short to init volume
@@ -152,7 +152,7 @@ def test_volumes(market_state, market, feed, ovl, alice, bob,
     expect_volume_bid = int(accumulator_bid)
     expect_volume_ask = int(accumulator_ask)
 
-    (actual_volume_bid, actual_volume_ask) = market_state.volumes(feed)
+    (actual_volume_bid, actual_volume_ask) = state.volumes(feed)
 
     assert expect_volume_bid == approx(int(actual_volume_bid))
     assert expect_volume_ask == approx(int(actual_volume_ask))
