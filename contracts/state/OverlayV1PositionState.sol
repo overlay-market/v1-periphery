@@ -118,11 +118,11 @@ abstract contract OverlayV1PositionState is
     }
 
     /// @dev current value of the individual position
-    function _value(IOverlayV1Market market, Oracle.Data memory data, Position.Info memory position)
-        internal
-        view
-        returns (uint256 value_)
-    {
+    function _value(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        Position.Info memory position
+    ) internal view returns (uint256 value_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
 
@@ -159,11 +159,11 @@ abstract contract OverlayV1PositionState is
     }
 
     /// @dev current notional (including PnL) of the individual position
-    function _notional(IOverlayV1Market market, Oracle.Data memory data, Position.Info memory position)
-        internal
-        view
-        returns (uint256 notional_)
-    {
+    function _notional(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        Position.Info memory position
+    ) internal view returns (uint256 notional_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
 
