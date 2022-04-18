@@ -55,6 +55,7 @@ abstract contract OverlayV1PositionState is
         debt_ = position.debtCurrent(fraction);
     }
 
+    /// @dev current cost basis of individual position
     function _cost(Position.Info memory position) internal view returns (uint256 cost_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
@@ -201,7 +202,6 @@ abstract contract OverlayV1PositionState is
 
     /// @notice Gets the position from the Overlay market associated with
     /// @notice the given feed for the given position owner and position id
-    // TODO: test
     function position(
         address feed,
         address owner,
@@ -211,14 +211,10 @@ abstract contract OverlayV1PositionState is
         position_ = _getPosition(market, owner, id);
     }
 
-    // TODO: pos views: value, pnl, notionalWithPnl, collateral, liquidatable
-    // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
-
     /// @notice Gets the current debt of the position on the Overlay
     /// @notice market associated with the given feed address for the given
     /// @notice position owner, id
     /// @return debt_ as the current debt taken on by the position
-    // TODO: test
     function debt(
         address feed,
         address owner,
@@ -233,7 +229,6 @@ abstract contract OverlayV1PositionState is
     /// @notice market associated with the given feed address for the given
     /// @notice position owner, id
     /// @return cost_ as the cost to build the position
-    // TODO: test
     function cost(
         address feed,
         address owner,
@@ -248,7 +243,6 @@ abstract contract OverlayV1PositionState is
     /// @notice market associated with the given feed address for the given
     /// @notice position owner, id
     /// @return oi_ as the current open interest occupied by the position
-    // TODO: test
     function oi(
         address feed,
         address owner,
@@ -266,7 +260,6 @@ abstract contract OverlayV1PositionState is
     /// @dev OI(t) = current open interest, OI(0) = open interest at build,
     /// @dev D = debt at build
     /// @return collateral_ as the current collateral backing the position
-    // TODO: test
     function collateral(
         address feed,
         address owner,
@@ -308,4 +301,7 @@ abstract contract OverlayV1PositionState is
         Position.Info memory position = _getPosition(market, owner, id);
         notional_ = _notional(market, data, position);
     }
+
+    // TODO: pos views: liquidatable returns (bool is, uint256 liqFee), tradingFee
+    // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
 }
