@@ -203,7 +203,7 @@ abstract contract OverlayV1PositionState is
     /// @dev current value of the individual position used on liquidations
     /// @dev currentPrice == midPrice on liquidations to be manipulation
     /// @dev resistant against price slippage manipulators
-    /// @dev will be slightly higher than _value()
+    /// @dev will always be greater than _value()
     function _valueForLiquidations(
         IOverlayV1Market market,
         Oracle.Data memory data,
@@ -410,7 +410,6 @@ abstract contract OverlayV1PositionState is
     /// @notice the given position owner, id
     /// @dev tradingFee = notional * tradingFeeRate
     /// @return tradingFee_ as the current trading fee charged
-    // TODO: test
     function tradingFee(
         address feed,
         address owner,
@@ -463,7 +462,6 @@ abstract contract OverlayV1PositionState is
     /// @notice open on the Overlay market associated with the given feed
     /// @notice address for the given position owner, id
     /// @return maintenanceMargin_ as the maintenance margin
-    // TODO: test
     function maintenanceMargin(
         address feed,
         address owner,
@@ -503,7 +501,6 @@ abstract contract OverlayV1PositionState is
     /// @notice Overlay market associated with the given feed address
     /// @notice for the given position owner, id
     /// @return liquidationPrice_ as the current liquidation price
-    // TODO: test
     function liquidationPrice(
         address feed,
         address owner,
