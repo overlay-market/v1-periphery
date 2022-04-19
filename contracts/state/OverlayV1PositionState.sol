@@ -527,10 +527,9 @@ abstract contract OverlayV1PositionState is
         require(collateral > 0, "OVLV1: collateral == 0");
 
         // get price delta from entry price: dp = | liqPrice - entryPrice |
-        uint256 dp = maintenanceMargin
-            .divUp(FixedPoint.ONE - liquidationFeeRate)
-            .subFloor(collateral)
+        uint256 dp = collateral
+            .subFloor(maintenanceMargin.divUp(FixedPoint.ONE - liquidationFeeRate))
             .divUp(oi);
-        liquidationPrice_ = position.isLong ? entryPrice + dp : entryPrice.subFloor(dp);
+        liquidationPrice_ = position.isLong ? entryPrice.subFloor(dp) : entryPrice + dp;
     }
 }
