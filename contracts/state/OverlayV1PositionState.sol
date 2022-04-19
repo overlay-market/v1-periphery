@@ -434,20 +434,18 @@ abstract contract OverlayV1PositionState is
     }
 
     /// @notice Gets the current position value in excess of the required
-    /// @notice maintenance margin on the Overlay market associated with
-    /// @notice the given feed address for the given position owner, id
-    /// @dev if valueLessMaintenance_ > 0,  valueLessMaintenance_ is remaining margin
-    /// @dev until position liquidated,
-    /// @dev else if valueLessMaintenance_ < 0, valueLessMaintenance_ is maintenance
-    /// @dev shortfall lost to delayed liquidation
-    /// @dev accounts for liquidation fee within maintenance
-    /// @return valueInExcessOfMaintenance_ as the current value less maintenance
+    /// @notice maintenance margin and liquidation fee on the Overlay market
+    /// @notice associated with the given feed address for the given
+    /// @notice position owner, id
+    /// @dev excess_ > 0: returns excess margin before liquidation
+    /// @dev excess_ < 0, returns margin lost due to delayed liquidation
+    /// @return excess_ as the current value less maintenance and liq fees
     // TODO: test
-    function valueInExcessOfMaintenance(
+    function valueInExcessOfMaintenanceAndFees(
         address feed,
         address owner,
         uint256 id
-    ) external view returns (int256 valueInExcessOfMaintenance_) {
+    ) external view returns (int256 excess_) {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
@@ -455,10 +453,7 @@ abstract contract OverlayV1PositionState is
         uint256 value = _value(market, data, position);
         uint256 maintenanceMargin = _maintenanceMargin(market, position);
         uint256 liquidationFee = _liquidationFee(market, data, position);
-        valueInExcessOfMaintenance_ =
-            int256(value) -
-            int256(maintenanceMargin) -
-            int256(liquidationFee);
+        excess_ = int256(value) - int256(maintenanceMargin) - int256(liquidationFee);
     }
 
     /// @notice Gets the current liquidation price of the position on the
