@@ -200,6 +200,48 @@ abstract contract OverlayV1PositionState is
         );
     }
 
+    /// @dev current value of the individual position used on liquidations
+    /// @dev currentPrice == midPrice on liquidations to be manipulation
+    /// @dev resistant against price slippage manipulators
+    /// @dev will be slightly higher than _value()
+    function _valueForLiquidations(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        Position.Info memory position
+    ) internal view returns (uint256 value_) {
+        // assume entire position value such that fraction = ONE
+        uint256 fraction = FixedPoint.ONE;
+
+        // get the attributes needed to calculate position value:
+        // oiLong/Short, oiLongShares/oiShortShares, price, capPayoff
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+
+        // aggregate oi values on market
+        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = position.isLong
+            ? market.oiLongShares()
+            : market.oiShortShares();
+
+        // position's current oi factoring in funding
+        uint256 oi = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+
+        // current price is the price position receives upon liquidation
+        // which is the mid price (manipulation resistant)
+        uint256 currentPrice = _mid(data);
+
+        // get cap payoff from risk params
+        uint256 capPayoff = market.params(uint256(Risk.Parameters.CapPayoff));
+
+        // return current value
+        value_ = position.value(
+            fraction,
+            oiTotalOnSide,
+            oiTotalSharesOnSide,
+            currentPrice,
+            capPayoff
+        );
+    }
+
     /// @dev current liquidation state of an individual position
     function _liquidatable(
         IOverlayV1Market market,
@@ -245,7 +287,7 @@ abstract contract OverlayV1PositionState is
             uint256 liquidationFeeRate = market.params(
                 uint256(Risk.Parameters.LiquidationFeeRate)
             );
-            uint256 value = _value(market, data, position);
+            uint256 value = _valueForLiquidations(market, data, position);
             liquidationFee_ = value.mulDown(liquidationFeeRate);
         }
     }
@@ -433,15 +475,15 @@ abstract contract OverlayV1PositionState is
         maintenanceMargin_ = _maintenanceMargin(market, position);
     }
 
-    /// @notice Gets the current position value in excess of the required
-    /// @notice maintenance margin and liquidation fee on the Overlay market
+    /// @notice Gets the current position remaining margin to eat through
+    /// @notice before liquidation occurs on the Overlay market
     /// @notice associated with the given feed address for the given
     /// @notice position owner, id
     /// @dev excess_ > 0: returns excess margin before liquidation
     /// @dev excess_ < 0, returns margin lost due to delayed liquidation
     /// @return excess_ as the current value less maintenance and liq fees
     // TODO: test
-    function valueInExcessOfMaintenanceAndFees(
+    function marginExcessBeforeLiquidation(
         address feed,
         address owner,
         uint256 id
@@ -450,7 +492,8 @@ abstract contract OverlayV1PositionState is
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
 
-        uint256 value = _value(market, data, position);
+        // liquidation uses mid price
+        uint256 value = _valueForLiquidations(market, data, position);
         uint256 maintenanceMargin = _maintenanceMargin(market, position);
         uint256 liquidationFee = _liquidationFee(market, data, position);
         excess_ = int256(value) - int256(maintenanceMargin) - int256(liquidationFee);
