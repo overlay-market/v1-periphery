@@ -32,13 +32,11 @@ abstract contract OverlayV1BaseState {
 
     /// @notice Gets the Overlay market address for the given feed
     /// @dev reverts if market doesn't exist
-    // TODO: test
     function market(address feed) external view returns (IOverlayV1Market market_) {
         market_ = _getMarket(feed);
     }
 
     /// @notice Gets the oracle data from the given feed
-    // TODO: test
     function data(address feed) external view returns (Oracle.Data memory data_) {
         data_ = _getOracleData(feed);
     }
