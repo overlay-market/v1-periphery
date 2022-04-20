@@ -518,10 +518,7 @@ abstract contract OverlayV1PositionState is
         // get position attributes dependent on funding
         uint256 oi = _oi(market, position);
         uint256 collateral = _collateral(market, position);
-
-        // TODO: think thru these require statements
         require(oi > 0, "OVLV1: oi == 0");
-        require(collateral > 0, "OVLV1: collateral == 0");
 
         // get price delta from entry price: dp = | liqPrice - entryPrice |
         uint256 dp = collateral

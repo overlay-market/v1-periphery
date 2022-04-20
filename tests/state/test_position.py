@@ -1,6 +1,6 @@
 import pytest
 from pytest import approx
-from brownie import chain
+from brownie import chain, reverts
 from brownie.test import given, strategy
 from decimal import Decimal
 
@@ -202,8 +202,6 @@ def test_collateral(state, market, feed, ovl, alice):
     actual_collateral = int(state.collateral(feed, alice.address, pos_id))
     assert expect_collateral == approx(actual_collateral)
 
-
-# TODO: mock_feed to change price for value and notional
 
 @given(is_long=strategy('bool'))
 def test_value(state, market, feed, ovl, alice, is_long):
@@ -533,3 +531,10 @@ def test_liquidation_price(state, market, feed, ovl, alice, is_long):
     actual_liquidation_price = int(
         state.liquidationPrice(feed, alice.address, pos_id))
     assert expect_liquidation_price == approx(actual_liquidation_price)
+
+
+def test_liquidation_price_reverts_when_oi_is_zero(state, market, feed,
+                                                   ovl, alice):
+    # try for a position that doesn't exist
+    with reverts("OVLV1: oi == 0"):
+        _ = state.liquidationPrice(feed, alice.address, 0)
