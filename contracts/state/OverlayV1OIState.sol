@@ -6,10 +6,12 @@ import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
 import "@overlay/v1-core/contracts/libraries/Roller.sol";
 
+import "../interfaces/state/IOverlayV1OIState.sol";
+
 import "./OverlayV1BaseState.sol";
 import "./OverlayV1PriceState.sol";
 
-abstract contract OverlayV1OIState is OverlayV1BaseState, OverlayV1PriceState {
+abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, OverlayV1PriceState {
     using FixedPoint for uint256;
     using Roller for Roller.Snapshot;
 

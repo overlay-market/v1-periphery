@@ -5,11 +5,11 @@ import "@overlay/v1-core/contracts/interfaces/IOverlayV1Factory.sol";
 import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
 import "@overlay/v1-core/contracts/interfaces/feeds/IOverlayV1Feed.sol";
 
-import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
-import "@overlay/v1-core/contracts/libraries/Position.sol";
 
-abstract contract OverlayV1BaseState {
+import "../interfaces/state/IOverlayV1BaseState.sol";
+
+abstract contract OverlayV1BaseState is IOverlayV1BaseState {
     // immutables
     IOverlayV1Factory public immutable factory;
 

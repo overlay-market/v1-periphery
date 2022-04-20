@@ -4,12 +4,14 @@ pragma solidity 0.8.10;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
-import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
+import "@overlay/v1-core/contracts/libraries/Roller.sol";
+
+import "../interfaces/state/IOverlayV1PriceState.sol";
 
 import "./OverlayV1BaseState.sol";
 
-abstract contract OverlayV1PriceState is OverlayV1BaseState {
+abstract contract OverlayV1PriceState is IOverlayV1PriceState, OverlayV1BaseState {
     using Roller for Roller.Snapshot;
 
     function _bid(

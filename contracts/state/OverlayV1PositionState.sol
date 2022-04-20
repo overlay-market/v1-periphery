@@ -4,13 +4,16 @@ pragma solidity 0.8.10;
 import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
 import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
-import "@overlay/v1-core/contracts/libraries/Roller.sol";
+import "@overlay/v1-core/contracts/libraries/Position.sol";
+
+import "../interfaces/state/IOverlayV1PositionState.sol";
 
 import "./OverlayV1BaseState.sol";
 import "./OverlayV1OIState.sol";
 import "./OverlayV1PriceState.sol";
 
 abstract contract OverlayV1PositionState is
+    IOverlayV1PositionState,
     OverlayV1BaseState,
     OverlayV1PriceState,
     OverlayV1OIState
