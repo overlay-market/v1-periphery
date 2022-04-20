@@ -200,6 +200,111 @@ abstract contract OverlayV1PositionState is
         );
     }
 
+    /// @dev current value of the individual position used on liquidations
+    /// @dev currentPrice == midPrice on liquidations to be manipulation
+    /// @dev resistant against price slippage manipulators
+    /// @dev will always be greater than _value()
+    function _valueForLiquidations(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        Position.Info memory position
+    ) internal view returns (uint256 value_) {
+        // assume entire position value such that fraction = ONE
+        uint256 fraction = FixedPoint.ONE;
+
+        // get the attributes needed to calculate position value:
+        // oiLong/Short, oiLongShares/oiShortShares, price, capPayoff
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+
+        // aggregate oi values on market
+        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = position.isLong
+            ? market.oiLongShares()
+            : market.oiShortShares();
+
+        // position's current oi factoring in funding
+        uint256 oi = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+
+        // current price is the price position receives upon liquidation
+        // which is the mid price (manipulation resistant)
+        uint256 currentPrice = _mid(data);
+
+        // get cap payoff from risk params
+        uint256 capPayoff = market.params(uint256(Risk.Parameters.CapPayoff));
+
+        // return current value
+        value_ = position.value(
+            fraction,
+            oiTotalOnSide,
+            oiTotalSharesOnSide,
+            currentPrice,
+            capPayoff
+        );
+    }
+
+    /// @dev current liquidation state of an individual position
+    function _liquidatable(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        Position.Info memory position
+    ) internal view returns (bool liquidatable_) {
+        // get the attributes needed to calculate position notional:
+        // oiLong/Short, oiLongShares/oiShortShares, price, capPayoff
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+
+        // aggregate oi values on market
+        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = position.isLong
+            ? market.oiLongShares()
+            : market.oiShortShares();
+
+        // current price is the price position receives upon liquidation
+        // which is the mid price (manipulation resistant)
+        uint256 currentPrice = _mid(data);
+
+        // get liquidation fee rate from risk params
+        uint256 liquidationFeeRate = market.params(uint256(Risk.Parameters.LiquidationFeeRate));
+
+        // get whether liquidatable
+        liquidatable_ = position.liquidatable(
+            oiTotalOnSide,
+            oiTotalSharesOnSide,
+            currentPrice,
+            market.params(uint256(Risk.Parameters.CapPayoff)),
+            market.params(uint256(Risk.Parameters.MaintenanceMarginFraction)),
+            liquidationFeeRate
+        );
+    }
+
+    /// @dev current liquidation fee rewarded to liquidator of position
+    function _liquidationFee(
+        IOverlayV1Market market,
+        Oracle.Data memory data,
+        Position.Info memory position
+    ) internal view returns (uint256 liquidationFee_) {
+        bool liquidatable = _liquidatable(market, data, position);
+        if (liquidatable) {
+            uint256 liquidationFeeRate = market.params(
+                uint256(Risk.Parameters.LiquidationFeeRate)
+            );
+            uint256 value = _valueForLiquidations(market, data, position);
+            liquidationFee_ = value.mulDown(liquidationFeeRate);
+        }
+    }
+
+    /// @dev maintenance margin required to keep position open
+    function _maintenanceMargin(IOverlayV1Market market, Position.Info memory position)
+        internal
+        view
+        returns (uint256 maintenanceMargin_)
+    {
+        uint256 maintenanceMarginFraction = market.params(
+            uint256(Risk.Parameters.MaintenanceMarginFraction)
+        );
+        uint256 q = position.notionalInitial(FixedPoint.ONE);
+        maintenanceMargin_ = q.mulUp(maintenanceMarginFraction);
+    }
+
     /// @notice Gets the position from the Overlay market associated with
     /// @notice the given feed for the given position owner and position id
     function position(
@@ -300,6 +405,125 @@ abstract contract OverlayV1PositionState is
         notional_ = _notional(market, data, position);
     }
 
-    // TODO: pos views: liquidatable returns (bool is, uint256 liqFee), tradingFee
-    // TODO: getAccountLiquidity() equivalent from Comptroller (PnL + value)
+    /// @notice Gets the trading fee charged to unwind the position on the
+    /// @notice Overlay market associated with the given feed address for
+    /// @notice the given position owner, id
+    /// @dev tradingFee = notional * tradingFeeRate
+    /// @return tradingFee_ as the current trading fee charged
+    function tradingFee(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 tradingFee_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+        uint256 notional = _notional(market, data, position);
+
+        // get the trading fee rate from risk params
+        uint256 tradingFeeRate = market.params(uint256(Risk.Parameters.TradingFeeRate));
+        tradingFee_ = notional.mulUp(tradingFeeRate);
+    }
+
+    /// @notice Gets whether the position is currently liquidatable on the Overlay
+    /// @notice market associated with the given feed address for the given
+    /// @notice position owner, id
+    /// @return liquidatable_ as whether the position is liquidatable
+    // TODO: test
+    function liquidatable(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (bool liquidatable_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+        liquidatable_ = _liquidatable(market, data, position);
+    }
+
+    /// @notice Gets the liquidation fee rewarded to the liquidator if
+    /// @notice position currently liquidatable on the Overlay market associated
+    /// @notice with the given feed address for the given position owner, id
+    /// @dev liquidationFee_ == 0 if not liquidatable
+    /// @return liquidationFee_ as the current liquidation fee reward
+    // TODO: test
+    function liquidationFee(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 liquidationFee_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+        liquidationFee_ = _liquidationFee(market, data, position);
+    }
+
+    /// @notice Gets the maintenance margin required to keep the position
+    /// @notice open on the Overlay market associated with the given feed
+    /// @notice address for the given position owner, id
+    /// @return maintenanceMargin_ as the maintenance margin
+    function maintenanceMargin(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 maintenanceMargin_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+        maintenanceMargin_ = _maintenanceMargin(market, position);
+    }
+
+    /// @notice Gets the current position remaining margin to eat through
+    /// @notice before liquidation occurs on the Overlay market
+    /// @notice associated with the given feed address for the given
+    /// @notice position owner, id
+    /// @dev excess_ > 0: returns excess margin before liquidation
+    /// @dev excess_ < 0, returns margin lost due to delayed liquidation
+    /// @return excess_ as the current value less maintenance and liq fees
+    // TODO: test
+    function marginExcessBeforeLiquidation(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (int256 excess_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+
+        // liquidation uses mid price
+        uint256 value = _valueForLiquidations(market, data, position);
+        uint256 maintenanceMargin = _maintenanceMargin(market, position);
+        uint256 liquidationFee = _liquidationFee(market, data, position);
+        excess_ = int256(value) - int256(maintenanceMargin) - int256(liquidationFee);
+    }
+
+    /// @notice Gets the current liquidation price of the position on the
+    /// @notice Overlay market associated with the given feed address
+    /// @notice for the given position owner, id
+    /// @return liquidationPrice_ as the current liquidation price
+    function liquidationPrice(
+        address feed,
+        address owner,
+        uint256 id
+    ) external view returns (uint256 liquidationPrice_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+        Position.Info memory position = _getPosition(market, owner, id);
+
+        // get position attributes independent of funding
+        uint256 entryPrice = position.entryPrice();
+        uint256 liquidationFeeRate = market.params(uint256(Risk.Parameters.LiquidationFeeRate));
+        uint256 maintenanceMargin = _maintenanceMargin(market, position);
+
+        // get position attributes dependent on funding
+        uint256 oi = _oi(market, position);
+        uint256 collateral = _collateral(market, position);
+        require(oi > 0, "OVLV1: oi == 0");
+
+        // get price delta from entry price: dp = | liqPrice - entryPrice |
+        uint256 dp = collateral
+            .subFloor(maintenanceMargin.divUp(FixedPoint.ONE - liquidationFeeRate))
+            .divUp(oi);
+        liquidationPrice_ = position.isLong ? entryPrice.subFloor(dp) : entryPrice + dp;
+    }
 }
