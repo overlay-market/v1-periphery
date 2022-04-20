@@ -1,4 +1,3 @@
-from brownie import chain
 from .utils import RiskParameter
 
 
