@@ -481,7 +481,6 @@ abstract contract OverlayV1PositionState is
     /// @dev excess_ > 0: returns excess margin before liquidation
     /// @dev excess_ < 0, returns margin lost due to delayed liquidation
     /// @return excess_ as the current value less maintenance and liq fees
-    // TODO: test
     function marginExcessBeforeLiquidation(
         address feed,
         address owner,

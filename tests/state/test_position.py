@@ -583,8 +583,138 @@ def test_maintenance_margin(state, market, feed, ovl, alice):
     assert expect_maintenance_margin == approx(actual_maintenance_margin)
 
 
-def test_margin_excess_before_liquidation(state, market, feed, ovl, alice):
-    pass
+@given(is_long=strategy('bool'))
+def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
+                                          ovl, alice, is_long):
+    # alice build params
+    input_collateral_alice = 20000000000000000000  # 20
+    input_leverage_alice = 3000000000000000000  # 3
+    input_is_long_alice = is_long
+    input_price_limit_alice = 2**256-1 if is_long else 0
+
+    # Use 2.5% as diff before/beyond liq
+    tol = 2.5e-2
+
+    # approve max for alice
+    ovl.approve(mock_market, 2**256-1, {"from": alice})
+
+    # build position for alice
+    tx = mock_market.build(input_collateral_alice, input_leverage_alice,
+                           input_is_long_alice, input_price_limit_alice,
+                           {"from": alice})
+    pos_id = tx.return_value
+
+    # set price to just before liquidation price
+    # NOTE: liquidationPrice() tests below in test_liquidation_price
+    expect_liquidation_price = state.liquidationPrice(
+        mock_feed, alice.address, pos_id)
+    mock_feed_price = expect_liquidation_price * \
+        (1 + tol) if is_long else expect_liquidation_price * (1 - tol)
+    mock_feed.setPrice(mock_feed_price, {"from": alice})
+
+    # get the position key for market query
+    pos_key = get_position_key(alice.address, pos_id)
+
+    # get market position oi
+    pos = mock_market.positions(pos_key)
+    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
+     expect_oi_shares) = pos
+    expect_oi_tot_shares_on_side = mock_market.oiLongShares() if is_long \
+        else mock_market.oiShortShares()
+
+    # NOTE: ois() tests in test_oi.py
+    actual_oi_long, actual_oi_short = state.ois(mock_feed)
+    actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
+
+    # calculate the expected value of position
+    # V(t) = N(t) +/- OI(t) * [P(t) - P(0)]
+    expect_oi_initial = expect_oi_shares
+    expect_oi = int(
+        Decimal(actual_oi_tot_on_side) * Decimal(expect_oi_shares)
+        / Decimal(expect_oi_tot_shares_on_side)
+    )
+
+    # get the entry price
+    expect_entry_price = position_entry_price(pos)
+    expect_entry_price = int(expect_entry_price)
+
+    # mid used for liquidation exit (manipulation resistant)
+    # NOTE: mid tests in test_price.py
+    expect_exit_price = state.mid(mock_feed)
+    expect_exit_price = int(expect_exit_price)
+
+    # calculate value with collateral + PnL from price deltas
+    expect_collateral = Decimal(expect_notional_initial
+                                * (expect_oi / expect_oi_initial)-expect_debt)
+    expect_pnl = expect_oi * (expect_exit_price
+                              - expect_entry_price) / Decimal(1e18)
+    if not is_long:
+        expect_pnl *= -1
+
+    expect_value = int(expect_collateral + expect_pnl)
+    if expect_value < 0:
+        expect_value = 0
+
+    # calculate expect liquidation fee as percentage on expected value left
+    # NOTE: liquidationFee tests above
+    expect_liq_fee = int(state.liquidationFee(
+        mock_feed, alice.address, pos_id))
+
+    # calculate the expect maintenance margin
+    # NOTE: maintenanceMargin tests above
+    expect_maintenance_margin = int(
+        state.maintenanceMargin(mock_feed, alice.address, pos_id))
+
+    # calculate expected excess
+    expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
+    actual_excess = int(state.marginExcessBeforeLiquidation(
+        mock_feed, alice.address, pos_id))
+
+    # TODO: why rel tol needed here?
+    assert expect_excess == approx(actual_excess, rel=1e-3)
+
+    # repeat the same when excess < 0
+    # set price to just beyond liquidation price
+    expect_liquidation_price = state.liquidationPrice(
+        mock_feed, alice.address, pos_id)
+    mock_feed_price = expect_liquidation_price * \
+        (1 - tol) if is_long else expect_liquidation_price * (1 + tol)
+    mock_feed.setPrice(mock_feed_price, {"from": alice})
+
+    # mid used for liquidation exit (manipulation resistant)
+    # NOTE: mid tests in test_price.py
+    expect_exit_price = state.mid(mock_feed)
+    expect_exit_price = int(expect_exit_price)
+
+    # calculate value with collateral + PnL from price deltas
+    expect_collateral = Decimal(expect_notional_initial
+                                * (expect_oi / expect_oi_initial)-expect_debt)
+    expect_pnl = expect_oi * (expect_exit_price
+                              - expect_entry_price) / Decimal(1e18)
+    if not is_long:
+        expect_pnl *= -1
+
+    expect_value = int(expect_collateral + expect_pnl)
+    if expect_value < 0:
+        expect_value = 0
+
+    # calculate expect liquidation fee as percentage on expected value left
+    # NOTE: liquidationFee tests above
+    expect_liq_fee = int(state.liquidationFee(
+        mock_feed, alice.address, pos_id))
+
+    # calculate the expect maintenance margin
+    # NOTE: maintenanceMargin tests above
+    expect_maintenance_margin = int(
+        state.maintenanceMargin(mock_feed, alice.address, pos_id))
+
+    # calculate expected excess
+    expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
+    actual_excess = int(state.marginExcessBeforeLiquidation(
+        mock_feed, alice.address, pos_id))
+
+    # TODO: why rel tol needed here?
+    assert expect_excess == approx(actual_excess, rel=1e-3)
 
 
 @given(is_long=strategy('bool'))
