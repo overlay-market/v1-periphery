@@ -432,7 +432,6 @@ abstract contract OverlayV1PositionState is
     /// @notice market associated with the given feed address for the given
     /// @notice position owner, id
     /// @return liquidatable_ as whether the position is liquidatable
-    // TODO: test
     function liquidatable(
         address feed,
         address owner,
@@ -449,7 +448,6 @@ abstract contract OverlayV1PositionState is
     /// @notice with the given feed address for the given position owner, id
     /// @dev liquidationFee_ == 0 if not liquidatable
     /// @return liquidationFee_ as the current liquidation fee reward
-    // TODO: test
     function liquidationFee(
         address feed,
         address owner,
