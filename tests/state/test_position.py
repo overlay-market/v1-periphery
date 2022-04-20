@@ -407,13 +407,63 @@ def test_trading_fee(state, market, feed, ovl, alice, is_long):
     assert expect_trading_fee == approx(actual_trading_fee)
 
 
-# TODO: mock market!
-def test_liquidatable(state, market, feed, ovl, alice):
-    pass
+@given(is_long=strategy('bool'))
+def test_liquidatable(state, mock_market, mock_feed, ovl, alice, is_long):
+    # alice build params
+    input_collateral_alice = 20000000000000000000  # 20
+    input_leverage_alice = 3000000000000000000  # 3
+    input_is_long_alice = is_long
+    input_price_limit_alice = 2**256-1 if is_long else 0
+
+    tol = 1e-4
+
+    # approve max for alice
+    ovl.approve(mock_market, 2**256-1, {"from": alice})
+
+    # build position for alice
+    tx = mock_market.build(input_collateral_alice, input_leverage_alice,
+                           input_is_long_alice, input_price_limit_alice,
+                           {"from": alice})
+    pos_id = tx.return_value
+
+    # get the position key for market query
+    pos_key = get_position_key(alice.address, pos_id)
+
+    # get the market position
+    pos = mock_market.positions(pos_key)
+    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
+     expect_oi_shares) = pos
+
+    # check not liquidatable
+    expect_liquidatable = False
+    actual_liquidatable = state.liquidatable(mock_feed, alice.address, pos_id)
+    assert expect_liquidatable == actual_liquidatable
+
+    # set price to just beyond liquidation price and make sure liquidatable
+    # NOTE: liquidationPrice() tests below in test_liquidation_price
+    expect_liquidation_price = state.liquidationPrice(
+        mock_feed, alice.address, pos_id)
+    mock_feed_price = expect_liquidation_price * \
+        (1 - tol) if is_long else expect_liquidation_price * (1 + tol)
+    mock_feed.setPrice(mock_feed_price, {"from": alice})
+
+    # check liquidatable
+    expect_liquidatable = True
+    actual_liquidatable = state.liquidatable(mock_feed, alice.address, pos_id)
+    assert expect_liquidatable == actual_liquidatable
+
+    # set price to just before liquidation price and make sure not liquidatable
+    mock_feed_price = expect_liquidation_price * \
+        (1 + tol) if is_long else expect_liquidation_price * (1 - tol)
+    mock_feed.setPrice(mock_feed_price, {"from": alice})
+
+    # check no longer liquidatable
+    expect_liquidatable = False
+    actual_liquidatable = state.liquidatable(mock_feed, alice.address, pos_id)
+    assert expect_liquidatable == actual_liquidatable
 
 
-# TODO: mock market!
-def test_liquidation_fee(state, market, feed, ovl, alice):
+def test_liquidation_fee(state, mock_market, mock_feed, ovl, alice):
     pass
 
 
@@ -454,7 +504,6 @@ def test_maintenance_margin(state, market, feed, ovl, alice):
     assert expect_maintenance_margin == approx(actual_maintenance_margin)
 
 
-# TODO: mock market!
 def test_margin_excess_before_liquidation(state, market, feed, ovl, alice):
     pass
 
