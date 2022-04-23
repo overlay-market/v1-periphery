@@ -21,7 +21,7 @@ contract OverlayV1FeeRecipient {
     uint256 public immutable incentiveLeadTime; // lead time for incentive start
     uint256 public immutable incentiveDuration; // duration of incentive when replenished
 
-    // active governance determined incentives for Uni V3 pools
+    // governance determined Uni V3 pools to actively incentivize
     struct Incentive {
         address token0;
         address token1;
@@ -31,13 +31,13 @@ contract OverlayV1FeeRecipient {
     Incentive[] public incentives;
     uint256 public totalWeight;
 
+    // registry of created incentive start and end times
     struct Span {
         uint256 startTime;
         uint256 endTime;
     }
-    // registry of created incentive start and end times;
-    // for a given index in incentives array above returns Span
-    mapping(uint256 => Span) public spans;
+    // for a given index in incentives array above returns array of Spans
+    mapping(uint256 => Span[]) public spans;
 
     // last time incentives were replenished with rewards
     uint256 public blockTimestampLast;
@@ -91,8 +91,20 @@ contract OverlayV1FeeRecipient {
         for (uint256 i = 0; i < length; i++) {
             Incentive memory incentive = incentives[i];
             uint256 reward = _calcReward(incentive, totalReward);
-            _replenishIncentive(incentive, startTime, endTime, address(this), reward);
-            emit IncentiveReplenished(i, startTime, endTime, reward);
+
+            // only replenish if there's a reward to give the incentive
+            if (reward > 0) {
+                // replenish the incentive through staker
+                _replenishIncentive(incentive, startTime, endTime, address(this), reward);
+
+                // store the time span over which incentive will last
+                // for reference in registry
+                spans[i].push(Span({startTime: startTime, endTime: endTime}));
+
+                // emit event to track so liquidity miners
+                // can stake existing deposit on staker
+                emit IncentiveReplenished(i, startTime, endTime, reward);
+            }
         }
 
         // set the last timestamp replenished
