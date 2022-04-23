@@ -100,9 +100,10 @@ contract OverlayV1FeeRecipient {
         // TODO: gas issue here?
         // TODO: check any issues with totalWeight == 0 when no incentives
         uint256 length = incentives.length;
+        uint256 _totalWeight = totalWeight;
         for (uint256 i = 1; i < length; i++) {
             Incentive memory incentive = incentives[i];
-            uint256 reward = calcReward(incentive, totalReward);
+            uint256 reward = calcReward(incentive, totalReward, _totalWeight);
 
             // only replenish if there's a reward to give the incentive
             if (reward > 0) {
@@ -128,12 +129,13 @@ contract OverlayV1FeeRecipient {
     /// @dev mul/div down with fraction to avoid transferring more than totalReward
     // TODO: test
     // TODO: check any issues with totalWeight == 0 when no incentives
-    function calcReward(Incentive memory incentive, uint256 totalReward)
-        public
-        returns (uint256 reward_)
-    {
+    function calcReward(
+        Incentive memory incentive,
+        uint256 totalReward,
+        uint256 _totalWeight
+    ) public pure returns (uint256 reward_) {
         // div down to avoid transferring more
-        uint256 fraction = incentive.weight.divDown(totalWeight);
+        uint256 fraction = incentive.weight.divDown(_totalWeight);
         reward_ = totalReward.mulDown(fraction);
     }
 
