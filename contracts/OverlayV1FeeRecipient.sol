@@ -85,25 +85,27 @@ contract OverlayV1FeeRecipient {
     /// @notice trading fees currently housed in this contract
     // TODO: test
     function replenishIncentives() external {
-        uint256 blockTimestamp = block.timestamp;
-        require(blockTimestamp > blockTimestampLast + minReplenishDuration, "OVLV1: duration<min");
+        require(
+            block.timestamp > blockTimestampLast + minReplenishDuration,
+            "OVLV1: duration<min"
+        );
 
         // needed span attributes for start and end of new incentives
-        uint256 startTime = blockTimestamp + incentiveLeadTime;
+        uint256 startTime = block.timestamp + incentiveLeadTime;
         uint256 endTime = startTime + incentiveDuration;
 
         // total reward to be given out should be current balance of fees
         uint256 totalReward = ovl.balanceOf(address(this));
 
         // for each incentive, calculate reward then replenish through staker
-        // NOTE: start loop at index 1 since 0 is empty
+        // NOTE: start loop at index 1 since 0 index of incentives is empty
         // TODO: gas issue here?
         // TODO: check any issues with totalWeight == 0 when no incentives
         uint256 length = incentives.length;
         uint256 _totalWeight = totalWeight;
         for (uint256 i = 1; i < length; i++) {
             Incentive memory incentive = incentives[i];
-            uint256 reward = calcReward(incentive, totalReward, _totalWeight);
+            uint256 reward = calcIncentiveReward(incentive, totalReward, _totalWeight);
 
             // only replenish if there's a reward to give the incentive
             if (reward > 0) {
@@ -122,21 +124,21 @@ contract OverlayV1FeeRecipient {
         }
 
         // set the last timestamp replenished
-        blockTimestampLast = blockTimestamp;
+        blockTimestampLast = block.timestamp;
     }
 
     /// @notice Calculates the reward amount to allocate to the given incentive
     /// @dev mul/div down with fraction to avoid transferring more than totalReward
     // TODO: test
     // TODO: check any issues with totalWeight == 0 when no incentives
-    function calcReward(
+    function calcIncentiveReward(
         Incentive memory incentive,
-        uint256 totalReward,
-        uint256 _totalWeight
+        uint256 rewardTotal,
+        uint256 weightTotal
     ) public pure returns (uint256 reward_) {
         // div down to avoid transferring more
-        uint256 fraction = incentive.weight.divDown(_totalWeight);
-        reward_ = totalReward.mulDown(fraction);
+        uint256 fraction = incentive.weight.divDown(weightTotal);
+        reward_ = rewardTotal.mulDown(fraction);
     }
 
     /// @notice Creates new liquidity mining incentive for given reward
