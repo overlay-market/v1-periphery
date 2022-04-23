@@ -3,6 +3,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
+import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol";
 
@@ -26,6 +27,9 @@ interface IUniswapV3Staker is IERC721Receiver, IMulticall {
         int24 minWidth;
         address refundee;
     }
+
+    /// @notice The Uniswap V3 Factory
+    function factory() external view returns (IUniswapV3Factory);
 
     /// @notice Creates a new liquidity mining incentive program
     /// @param key Details of the incentive to create
