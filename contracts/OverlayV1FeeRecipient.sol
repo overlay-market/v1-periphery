@@ -222,10 +222,7 @@ contract OverlayV1FeeRecipient {
         uint24 fee,
         uint256 weight
     ) external onlyGovernor {
-        // check incentive exists
-        require(isIncentive(token0, token1, fee), "OVLV1: !incentive");
-
-        // get the incentive
+        // get the incentive (checks incentive exists as well)
         uint256 idx = getIncentiveIndex(token0, token1, fee);
         Incentive memory incentive = incentives[idx];
 
