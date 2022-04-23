@@ -3,7 +3,6 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol";
 
@@ -32,4 +31,17 @@ interface IUniswapV3Staker is IERC721Receiver, IMulticall {
     /// @param key Details of the incentive to create
     /// @param reward The amount of reward tokens to be distributed
     function createIncentive(IncentiveKey memory key, uint256 reward) external;
+
+    /// @notice Convenience function to create incentive setting minWidth param to max tick range
+    /// @param reward The amount of reward tokens to be distributed
+    function createIncentiveWithMaxRange(
+        IERC20Minimal rewardToken,
+        uint256 startTime,
+        uint256 endTime,
+        address refundee,
+        uint256 reward,
+        address token0,
+        address token1,
+        uint24 fee
+    ) external;
 }
