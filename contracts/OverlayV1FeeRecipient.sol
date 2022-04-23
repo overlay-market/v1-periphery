@@ -195,7 +195,7 @@ contract OverlayV1FeeRecipient {
 
         // check actually a Uni V3 pool
         IUniswapV3Factory uniV3Factory = staker.factory();
-        require(uniV3Factory.getPool(token0, token1, fee) != address(0), "OVLV1: !UniV3Pool");
+        require(uniV3Factory.getPool(token0, token1, fee) != address(0), "OVLV1: !UniswapV3Pool");
 
         // add new incentive
         incentives.push(Incentive({token0: token0, token1: token1, fee: fee, weight: weight}));
@@ -206,7 +206,7 @@ contract OverlayV1FeeRecipient {
         // store incentive id
         // store for (token0, token1) and (token1, token0) to save gas on checks
         // SEE: https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Factory.sol#L48
-        uint256 id = incentives.length;
+        uint256 id = incentives.length - 1;
         incentiveIds[token0][token1][fee] = id;
         incentiveIds[token1][token0][fee] = id;
 
