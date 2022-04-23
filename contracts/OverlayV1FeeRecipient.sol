@@ -78,12 +78,7 @@ contract OverlayV1FeeRecipient {
 
         // initialize first incentive array entry as empty
         // to save some gas on incentiveIds storage
-        incentives.push(Incentive({
-            token0: address(0),
-            token1: address(0),
-            fee: 0,
-            weight: 0
-        }));
+        incentives.push(Incentive({token0: address(0), token1: address(0), fee: 0, weight: 0}));
     }
 
     /// @notice Creates new liquidity mining incentives using all
@@ -105,7 +100,7 @@ contract OverlayV1FeeRecipient {
         // TODO: gas issue here?
         // TODO: check any issues with totalWeight == 0 when no incentives
         uint256 length = incentives.length;
-        for (uint256 i=1; i < length; i++) {
+        for (uint256 i = 1; i < length; i++) {
             Incentive memory incentive = incentives[i];
             uint256 reward = calcReward(incentive, totalReward);
 
@@ -165,20 +160,33 @@ contract OverlayV1FeeRecipient {
 
     /// @notice whether given (token0, token1, fee) pair is being incentivized
     // TODO: test
-    function isIncentive(address token0, address token1, uint24 fee) public view returns (bool is_) {
+    function isIncentive(
+        address token0,
+        address token1,
+        uint24 fee
+    ) public view returns (bool is_) {
         is_ = (incentiveIds[token0][token1][fee] > 0);
     }
 
     /// @notice Convenience view function
     // TODO: test
-    function getIncentiveIndex(address token0, address token1, uint24 fee) public view returns (uint256 idx_) {
+    function getIncentiveIndex(
+        address token0,
+        address token1,
+        uint24 fee
+    ) public view returns (uint256 idx_) {
         idx_ = incentiveIds[token0][token1][fee];
         require(idx_ > 0, "OVLV1: !incentive");
     }
 
     /// @notice Allows governor to add incentive for new liquidity mining pool
     // TODO: test
-    function addIncentive(address token0, address token1, uint24 fee, uint256 weight) external onlyGovernor {
+    function addIncentive(
+        address token0,
+        address token1,
+        uint24 fee,
+        uint256 weight
+    ) external onlyGovernor {
         // check weight > 0
         require(weight > 0, "OVLV1: incentive weight == 0");
 
@@ -190,12 +198,7 @@ contract OverlayV1FeeRecipient {
         require(uniV3Factory.getPool(token0, token1, fee) != address(0), "OVLV1: !UniV3Pool");
 
         // add new incentive
-        incentives.push(Incentive({
-            token0: token0,
-            token1: token1,
-            fee: fee,
-            weight: weight
-        }));
+        incentives.push(Incentive({token0: token0, token1: token1, fee: fee, weight: weight}));
 
         // update the total weight for all incentives
         totalWeight += weight;
@@ -213,7 +216,12 @@ contract OverlayV1FeeRecipient {
     /// @notice Updates the weight on the incentive associated with the given
     /// @notice (token0, token1, fee) pair
     // TODO: test
-    function updateIncentive(address token0, address token1, uint24 fee, uint256 weight) external onlyGovernor {
+    function updateIncentive(
+        address token0,
+        address token1,
+        uint24 fee,
+        uint256 weight
+    ) external onlyGovernor {
         // check incentive exists
         require(isIncentive(token0, token1, fee), "OVLV1: !incentive");
 

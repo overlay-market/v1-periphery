@@ -3,7 +3,7 @@ pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-import '@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
+import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol";
 
