@@ -188,7 +188,6 @@ contract OverlayV1FeeRecipient {
     }
 
     /// @notice Allows governor to add incentive for new liquidity mining pool
-    // TODO: test
     function addIncentive(
         address token0,
         address token1,
@@ -224,7 +223,6 @@ contract OverlayV1FeeRecipient {
 
     /// @notice Updates the weight on the incentive associated with the given
     /// @notice (token0, token1, fee) pair
-    // TODO: test
     function updateIncentive(
         address token0,
         address token1,

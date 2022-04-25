@@ -164,13 +164,101 @@ def test_add_incentive_reverts_when_uni_pool_not_exists(fee_recipient,
             token0, token1, fee, weight, {"from": gov})
 
 
-def test_update_incentive(fee_recipient):
-    pass
+def test_update_incentive(fee_recipient, pool_daiweth_30bps, gov, rando):
+    # pool 1 incentive attributes
+    expect_pool1_token0 = pool_daiweth_30bps.token0()
+    expect_pool1_token1 = pool_daiweth_30bps.token1()
+    expect_pool1_fee = pool_daiweth_30bps.fee()
+    expect_pool1_weight_add = 1000000000000000000  # 1
+
+    # add pool 1 incentive
+    tx_add = fee_recipient.addIncentive(
+        expect_pool1_token0, expect_pool1_token1, expect_pool1_fee,
+        expect_pool1_weight_add, {"from": gov})
+    expect_pool1_id = tx_add.events["IncentiveAdded"][0]["id"]
+
+    # total weight before update
+    expect_total_weight = fee_recipient.totalWeight()
+
+    # update the incentive for pool 1
+    expect_pool1_weight_update = 3000000000000000000  # 3
+    tx_updated = fee_recipient.updateIncentive(
+        expect_pool1_token0, expect_pool1_token1, expect_pool1_fee,
+        expect_pool1_weight_update, {"from": gov})
+
+    # check total weight updated
+    expect_total_weight -= expect_pool1_weight_add
+    expect_total_weight += expect_pool1_weight_update
+
+    actual_total_weight = fee_recipient.totalWeight()
+    assert expect_total_weight == actual_total_weight
+
+    # check incentive weight attribute updated
+    expect_incentive = (expect_pool1_token0, expect_pool1_token1,
+                        expect_pool1_fee, expect_pool1_weight_update)
+    actual_incentive = fee_recipient.incentives(expect_pool1_id)
+    assert expect_incentive == actual_incentive
+
+    # check event emitted
+    assert "IncentiveUpdated" in tx_updated.events
+    expect_event = OrderedDict({
+        "user": gov.address,
+        "id": expect_pool1_id,
+        "weight": expect_pool1_weight_update
+    })
+    actual_event = tx_updated.events["IncentiveUpdated"][0]
+    assert expect_event == actual_event
 
 
-def test_update_incentive_reverts_when_not_governor(fee_recipient):
-    pass
+def test_update_incentive_to_weight_zero(fee_recipient, pool_daiweth_30bps,
+                                         gov, rando):
+    # incentive attributes
+    token0 = pool_daiweth_30bps.token0()
+    token1 = pool_daiweth_30bps.token1()
+    fee = pool_daiweth_30bps.fee()
+    weight = 1000000000000000000  # 1
+
+    # add incentive
+    fee_recipient.addIncentive(token0, token1, fee, weight, {"from": gov})
+
+    # update incentive to zero weight
+    weight = 0
+    fee_recipient.updateIncentive(token0, token1, fee, weight, {"from": gov})
+
+    # get the incentive from id
+    (_, _, _, actual_weight) = fee_recipient.incentives(1, {"from": rando})
+    expect_weight = 0
+    assert expect_weight == actual_weight
 
 
-def test_update_incentive_reverts_when_incentive_not_exists(fee_recipient):
-    pass
+def test_update_incentive_reverts_when_not_governor(fee_recipient,
+                                                    pool_daiweth_30bps,
+                                                    gov, rando):
+    # incentive attributes
+    token0 = pool_daiweth_30bps.token0()
+    token1 = pool_daiweth_30bps.token1()
+    fee = pool_daiweth_30bps.fee()
+    weight = 1000000000000000000  # 1
+
+    # add incentive
+    fee_recipient.addIncentive(token0, token1, fee, weight, {"from": gov})
+
+    # attempt to update incentive from rando
+    with reverts("OVLV1: !governor"):
+        fee_recipient.updateIncentive(
+            token0, token1, fee, weight, {"from": rando})
+
+
+def test_update_incentive_reverts_when_incentive_not_exists(fee_recipient,
+                                                            pool_daiweth_30bps,
+                                                            gov):
+    # incentive attributes
+    token0 = pool_daiweth_30bps.token0()
+    token1 = pool_daiweth_30bps.token1()
+    fee = pool_daiweth_30bps.fee()
+    weight = 1000000000000000000  # 1
+
+    # attempt to update incentive when does not exist
+    with reverts("OVLV1: !incentive"):
+        fee_recipient.updateIncentive(
+            token0, token1, fee, weight, {"from": gov})
