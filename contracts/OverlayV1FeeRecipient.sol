@@ -46,13 +46,15 @@ contract OverlayV1FeeRecipient {
     // last time incentives were replenished with liquidity mining rewards
     uint256 public blockTimestampLast;
 
-    // event emitted on replenish incentive
+    // events emitted on replenish, update incentive
     event IncentiveReplenished(
-        uint256 indexed incentiveId,
+        address indexed user,
+        uint256 indexed id,
         uint256 startTime,
         uint256 endTime,
         uint256 reward
     );
+    event IncentiveUpdated(address indexed user, uint256 indexed id, uint256 weight);
 
     // governor modifier for governance sensitive functions
     modifier onlyGovernor() {
@@ -122,7 +124,7 @@ contract OverlayV1FeeRecipient {
 
                 // emit event to track so liquidity miners
                 // can stake existing deposit on staker
-                emit IncentiveReplenished(i, startTime, endTime, reward);
+                emit IncentiveReplenished(msg.sender, i, startTime, endTime, reward);
             }
         }
 
@@ -164,6 +166,7 @@ contract OverlayV1FeeRecipient {
     }
 
     /// @notice whether given (token0, token1, fee) pair is being incentivized
+    /// @return is_ where pair is incentivized
     function isIncentive(
         address token0,
         address token1,
@@ -173,6 +176,7 @@ contract OverlayV1FeeRecipient {
     }
 
     /// @notice Convenience view function
+    /// @return idx_ index in incentives array
     function getIncentiveIndex(
         address token0,
         address token1,
@@ -213,7 +217,8 @@ contract OverlayV1FeeRecipient {
         incentiveIds[token0][token1][fee] = id;
         incentiveIds[token1][token0][fee] = id;
 
-        // TODO: emit event
+        // emit event to track incentive additions
+        emit IncentiveUpdated(msg.sender, id, weight);
     }
 
     /// @notice Updates the weight on the incentive associated with the given
@@ -226,8 +231,8 @@ contract OverlayV1FeeRecipient {
         uint256 weight
     ) external onlyGovernor {
         // get the incentive (checks incentive exists as well)
-        uint256 idx = getIncentiveIndex(token0, token1, fee);
-        Incentive memory incentive = incentives[idx];
+        uint256 id = getIncentiveIndex(token0, token1, fee);
+        Incentive memory incentive = incentives[id];
 
         // update the total weights
         totalWeight = totalWeight - incentive.weight + weight;
@@ -235,8 +240,9 @@ contract OverlayV1FeeRecipient {
         // update the weight on the specific incentive
         // and store it
         incentive.weight = weight;
-        incentives[idx] = incentive;
+        incentives[id] = incentive;
 
-        // TODO: emit event
+        // emit event to track incentive updates
+        emit IncentiveUpdated(msg.sender, id, weight);
     }
 }

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.2;
 
+// COPIED AND MODIFIED FROM:
+// https://github.com/overlay-market/v3-staker/contracts/interfaces/IUniswapV3Staker.sol
+
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
