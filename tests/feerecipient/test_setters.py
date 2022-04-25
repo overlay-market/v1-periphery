@@ -42,13 +42,13 @@ def test_add_incentive(fee_recipient, pool_daiweth_30bps, pool_uniweth_30bps,
     assert expect_pool1_incentive_id == actual_pool1_incentive_id
 
     # test event emitted
-    assert 'IncentiveUpdated' in tx_pool1.events
+    assert 'IncentiveAdded' in tx_pool1.events
     expect_pool1_event = OrderedDict({
         "user": gov.address,
         "id": expect_pool1_incentive_id,
         "weight": expect_pool1_weight
     })
-    actual_pool1_event = tx_pool1.events["IncentiveUpdated"][0]
+    actual_pool1_event = tx_pool1.events["IncentiveAdded"][0]
     assert expect_pool1_event == actual_pool1_event
 
     # pool 2 incentive attributes
@@ -88,13 +88,13 @@ def test_add_incentive(fee_recipient, pool_daiweth_30bps, pool_uniweth_30bps,
     assert expect_pool2_incentive_id == actual_pool2_incentive_id
 
     # test event emitted
-    assert 'IncentiveUpdated' in tx_pool2.events
+    assert 'IncentiveAdded' in tx_pool2.events
     expect_pool2_event = OrderedDict({
         "user": gov.address,
         "id": expect_pool2_incentive_id,
         "weight": expect_pool2_weight
     })
-    actual_pool2_event = tx_pool2.events["IncentiveUpdated"][0]
+    actual_pool2_event = tx_pool2.events["IncentiveAdded"][0]
     assert expect_pool2_event == actual_pool2_event
 
 

@@ -46,7 +46,7 @@ contract OverlayV1FeeRecipient {
     // last time incentives were replenished with liquidity mining rewards
     uint256 public blockTimestampLast;
 
-    // events emitted on replenish, update incentive
+    // events emitted on replenish, add, update incentive
     event IncentiveReplenished(
         address indexed user,
         uint256 indexed id,
@@ -54,6 +54,7 @@ contract OverlayV1FeeRecipient {
         uint256 endTime,
         uint256 reward
     );
+    event IncentiveAdded(address indexed user, uint256 indexed id, uint256 weight);
     event IncentiveUpdated(address indexed user, uint256 indexed id, uint256 weight);
 
     // governor modifier for governance sensitive functions
@@ -218,7 +219,7 @@ contract OverlayV1FeeRecipient {
         incentiveIds[token1][token0][fee] = id;
 
         // emit event to track incentive additions
-        emit IncentiveUpdated(msg.sender, id, weight);
+        emit IncentiveAdded(msg.sender, id, weight);
     }
 
     /// @notice Updates the weight on the incentive associated with the given
