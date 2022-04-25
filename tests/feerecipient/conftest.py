@@ -43,12 +43,13 @@ def governor_role():
 
 
 @pytest.fixture(scope="module", params=[8000000])
-def create_token(ovl_v1_core, gov, alice, bob, request):
+def create_token(ovl_v1_core, gov, alice, bob, governor_role, request):
     sup = request.param
 
     def create_token(supply=sup):
         ovl = ovl_v1_core.OverlayV1Token
         tok = gov.deploy(ovl)
+        tok.grantRole(governor_role, gov, {"from": gov})
         tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
         tok.transfer(alice, (supply/2) * 10 ** tok.decimals(), {"from": gov})
         tok.transfer(bob, (supply/2) * 10 ** tok.decimals(), {"from": gov})

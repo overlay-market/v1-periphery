@@ -1,8 +1,12 @@
-def test_ovl_fixture(ovl):
+from brownie import reverts
+
+
+def test_ovl_fixture(ovl, governor_role, gov):
     assert ovl.decimals() == 18
     assert ovl.name() == "Overlay"
     assert ovl.symbol() == "OVL"
     assert ovl.totalSupply() == 8000000000000000000000000
+    assert ovl.hasRole(governor_role, gov) is True
 
 
 def test_token_fixtures(dai, weth, uni):
@@ -44,6 +48,18 @@ def test_fee_recipient_fixture(fee_recipient, ovl, staker):
     fee_recipient.ovl() == ovl
     fee_recipient.staker() == staker
 
+    # immutables
     fee_recipient.minReplenishDuration() == 2592000
     fee_recipient.incentiveLeadTime() == 86400
     fee_recipient.incentiveDuration() == 31536000
+
+    # incentives array initialized with a single empty element
+    (token0, token1, fee, weight) = fee_recipient.incentives(0)
+    assert token0 == "0x0000000000000000000000000000000000000000"
+    assert token1 == "0x0000000000000000000000000000000000000000"
+    assert fee == 0
+    assert weight == 0
+
+    # check only one element has been added to incentives
+    with reverts():
+        fee_recipient.incentives(1)

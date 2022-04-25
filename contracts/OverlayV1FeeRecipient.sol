@@ -90,19 +90,22 @@ contract OverlayV1FeeRecipient {
             "OVLV1: duration<min"
         );
 
+        // get the total incentive weights
+        uint256 _totalWeight = totalWeight;
+        require(_totalWeight > 0, "OVLV1: !incentives");
+
+        // total reward to be given out should be current balance of fees
+        uint256 totalReward = ovl.balanceOf(address(this));
+        require(totalReward > 0, "OVLV1: reward == 0");
+
         // needed span attributes for start and end of new incentives
         uint256 startTime = block.timestamp + incentiveLeadTime;
         uint256 endTime = startTime + incentiveDuration;
 
-        // total reward to be given out should be current balance of fees
-        uint256 totalReward = ovl.balanceOf(address(this));
-
         // for each incentive, calculate reward then replenish through staker
         // NOTE: start loop at index 1 since 0 index of incentives is empty
         // TODO: gas issue here?
-        // TODO: check any issues with totalWeight == 0 when no incentives
         uint256 length = incentives.length;
-        uint256 _totalWeight = totalWeight;
         for (uint256 i = 1; i < length; i++) {
             Incentive memory incentive = incentives[i];
             uint256 reward = calcIncentiveReward(incentive, totalReward, _totalWeight);
@@ -129,8 +132,6 @@ contract OverlayV1FeeRecipient {
 
     /// @notice Calculates the reward amount to allocate to the given incentive
     /// @dev mul/div down with fraction to avoid transferring more than totalReward
-    // TODO: test
-    // TODO: check any issues with totalWeight == 0 when no incentives
     function calcIncentiveReward(
         Incentive memory incentive,
         uint256 rewardTotal,
@@ -163,7 +164,6 @@ contract OverlayV1FeeRecipient {
     }
 
     /// @notice whether given (token0, token1, fee) pair is being incentivized
-    // TODO: test
     function isIncentive(
         address token0,
         address token1,
@@ -173,7 +173,6 @@ contract OverlayV1FeeRecipient {
     }
 
     /// @notice Convenience view function
-    // TODO: test
     function getIncentiveIndex(
         address token0,
         address token1,
