@@ -78,7 +78,7 @@ contract OverlayV1FeeRecipient {
 
         // initialize first incentive array entry as empty
         // to save some gas on incentiveIds storage
-        incentives.push(Incentive({token0: address(0), token1: address(0), fee: 0, weight: 0}));
+        incentives.push();
     }
 
     /// @notice Creates new liquidity mining incentives using all

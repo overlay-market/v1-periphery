@@ -101,6 +101,7 @@ def pos_manager():
 
 @pytest.fixture(scope="module")
 def staker():
+    # NOTE: For testing only
     yield Contract.from_explorer("0xf574E14f28ACb46aF71c42d827CD4Ff389E7723D")
 
 
