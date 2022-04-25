@@ -1,5 +1,11 @@
+import pytest
+from brownie import reverts
 from collections import OrderedDict
-# from brownie import reverts
+
+
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
 
 
 def test_add_incentive(fee_recipient, pool_daiweth_30bps, pool_uniweth_30bps,
@@ -98,20 +104,64 @@ def test_add_incentive(fee_recipient, pool_daiweth_30bps, pool_uniweth_30bps,
     assert expect_pool2_event == actual_pool2_event
 
 
-def test_add_incentive_reverts_when_not_governor(fee_recipient):
-    pass
+def test_add_incentive_reverts_when_not_governor(fee_recipient,
+                                                 pool_daiusdc_5bps, rando):
+    # incentive attributes
+    token0 = pool_daiusdc_5bps.token0()
+    token1 = pool_daiusdc_5bps.token1()
+    fee = pool_daiusdc_5bps.fee()
+    weight = 1000000000000000000  # 1
+
+    # attempt to add incentive from rando
+    with reverts("OVLV1: !governor"):
+        fee_recipient.addIncentive(
+            token0, token1, fee, weight, {"from": rando})
 
 
-def test_add_incentive_reverts_when_weight_zero(fee_recipient):
-    pass
+def test_add_incentive_reverts_when_weight_zero(fee_recipient,
+                                                pool_daiusdc_5bps, gov):
+    # incentive attributes
+    token0 = pool_daiusdc_5bps.token0()
+    token1 = pool_daiusdc_5bps.token1()
+    fee = pool_daiusdc_5bps.fee()
+    weight = 0  # 0
+
+    # attempt to add incentive with weight 0
+    with reverts("OVLV1: incentive weight == 0"):
+        fee_recipient.addIncentive(
+            token0, token1, fee, weight, {"from": gov})
 
 
-def test_add_incentive_reverts_when_incentive_exists(fee_recipient):
-    pass
+def test_add_incentive_reverts_when_incentive_exists(fee_recipient,
+                                                     pool_daiweth_30bps, gov):
+    # incentive attributes
+    token0 = pool_daiweth_30bps.token0()
+    token1 = pool_daiweth_30bps.token1()
+    fee = pool_daiweth_30bps.fee()
+    weight = 1000000000000000000  # 1
+
+    # add incentive
+    fee_recipient.addIncentive(token0, token1, fee, weight, {"from": gov})
+
+    # attempt to add incentive when already exists
+    with reverts("OVLV1: incentive exists"):
+        fee_recipient.addIncentive(
+            token0, token1, fee, weight, {"from": gov})
 
 
-def test_add_incentive_reverts_when_uni_pool_not_exists(fee_recipient):
-    pass
+def test_add_incentive_reverts_when_uni_pool_not_exists(fee_recipient,
+                                                        pool_daiusdc_5bps,
+                                                        rando, gov):
+    # incentive attributes
+    token0 = pool_daiusdc_5bps.token0()
+    token1 = pool_daiusdc_5bps.token1()
+    fee = 0  # zero fee so pool won't exist
+    weight = 1000000000000000000  # 1
+
+    # attempt to add incentive when already exists
+    with reverts("OVLV1: !UniswapV3Pool"):
+        fee_recipient.addIncentive(
+            token0, token1, fee, weight, {"from": gov})
 
 
 def test_update_incentive(fee_recipient):

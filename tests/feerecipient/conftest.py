@@ -80,6 +80,11 @@ def uni():
 
 
 @pytest.fixture(scope="module")
+def usdc():
+    yield Contract.from_explorer("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
+
+
+@pytest.fixture(scope="module")
 def pool_daiweth_30bps():
     yield Contract.from_explorer("0xC2e9F25Be6257c210d7Adf0D4Cd6E3E881ba25f8")
 
@@ -88,6 +93,11 @@ def pool_daiweth_30bps():
 def pool_uniweth_30bps():
     # to be used as example ovlweth pool
     yield Contract.from_explorer("0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801")
+
+
+@pytest.fixture(scope="module")
+def pool_daiusdc_5bps():
+    yield Contract.from_explorer("0x6c6Bc977E13Df9b0de53b251522280BB72383700")
 
 
 @pytest.fixture(scope="module")
