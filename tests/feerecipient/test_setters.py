@@ -36,13 +36,13 @@ def test_add_incentive(fee_recipient, pool_daiweth_30bps, pool_uniweth_30bps,
     expect_total_weight += expect_pool1_weight
 
     # check incentive id stored
-    actual_pool1_incentive_id = fee_recipient.incentiveIds(
+    actual_pool1_incentive_id = fee_recipient.incentiveIdxs(
         expect_pool1_token0, expect_pool1_token1, expect_pool1_fee,
         {"from": rando})
     assert expect_pool1_incentive_id == actual_pool1_incentive_id
 
     # check the reversed token1, token0 pairings also stores incentive id
-    actual_pool1_incentive_id = fee_recipient.incentiveIds(
+    actual_pool1_incentive_id = fee_recipient.incentiveIdxs(
         expect_pool1_token1, expect_pool1_token0, expect_pool1_fee,
         {"from": rando})
     assert expect_pool1_incentive_id == actual_pool1_incentive_id
@@ -82,13 +82,13 @@ def test_add_incentive(fee_recipient, pool_daiweth_30bps, pool_uniweth_30bps,
     expect_total_weight += expect_pool2_weight
 
     # check incentive id stored
-    actual_pool2_incentive_id = fee_recipient.incentiveIds(
+    actual_pool2_incentive_id = fee_recipient.incentiveIdxs(
         expect_pool2_token0, expect_pool2_token1, expect_pool2_fee,
         {"from": rando})
     assert expect_pool2_incentive_id == actual_pool2_incentive_id
 
     # check the reversed token1, token0 pairings also stores incentive id
-    actual_pool2_incentive_id = fee_recipient.incentiveIds(
+    actual_pool2_incentive_id = fee_recipient.incentiveIdxs(
         expect_pool2_token1, expect_pool2_token0, expect_pool2_fee,
         {"from": rando})
     assert expect_pool2_incentive_id == actual_pool2_incentive_id

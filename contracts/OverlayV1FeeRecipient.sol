@@ -8,6 +8,7 @@ import "@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
 import "./interfaces/uniswap/v3-staker/IUniswapV3Staker.sol";
+import "./libraries/uniswap/v3-staker/IncentiveId.sol";
 
 contract OverlayV1FeeRecipient {
     using FixedPoint for uint256;
@@ -32,27 +33,18 @@ contract OverlayV1FeeRecipient {
     Incentive[] public incentives;
     uint256 public totalWeight;
 
-    // registry of incentive ids for given (token0, token1, fee) pair
-    mapping(address => mapping(address => mapping(uint24 => uint256))) public incentiveIds;
-
-    // registry of created liquidity mining program start and end times
-    struct Span {
-        uint256 startTime;
-        uint256 endTime;
-    }
-    // for a given index in incentives array above returns array of Spans
-    mapping(uint256 => Span[]) public spans;
+    // registry of incentive idxs for given (token0, token1, fee) pair
+    mapping(address => mapping(address => mapping(uint24 => uint256))) public incentiveIdxs;
 
     // last time incentives were replenished with liquidity mining rewards
     uint256 public blockTimestampLast;
 
     // events emitted on replenish, add, update incentive
-    event IncentiveReplenished(
+    event IncentivesReplenished(
         address indexed user,
-        uint256 indexed id,
+        uint256[] rewards,
         uint256 startTime,
-        uint256 endTime,
-        uint256 reward
+        uint256 endTime
     );
     event IncentiveAdded(address indexed user, uint256 indexed id, uint256 weight);
     event IncentiveUpdated(address indexed user, uint256 indexed id, uint256 weight);
@@ -63,7 +55,6 @@ contract OverlayV1FeeRecipient {
         _;
     }
 
-    // TODO: test
     constructor(
         IOverlayV1Token _ovl,
         IUniswapV3Staker _staker,
@@ -80,7 +71,7 @@ contract OverlayV1FeeRecipient {
         incentiveDuration = _incentiveDuration;
 
         // initialize first incentive array entry as empty
-        // to save some gas on incentiveIds storage
+        // to save some gas on incentiveIdxs storage
         incentives.push();
     }
 
@@ -101,14 +92,17 @@ contract OverlayV1FeeRecipient {
         uint256 totalReward = ovl.balanceOf(address(this));
         require(totalReward > 0, "OVLV1: reward == 0");
 
-        // needed span attributes for start and end of new incentives
+        // needed timespan attributes for start and end of new incentives
         uint256 startTime = block.timestamp + incentiveLeadTime;
         uint256 endTime = startTime + incentiveDuration;
 
+        // approve staker to transfer totalReward from staker
+        ovl.approve(address(staker), totalReward);
+
         // for each incentive, calculate reward then replenish through staker
         // NOTE: start loop at index 1 since 0 index of incentives is empty
-        // TODO: gas issue here?
         uint256 length = incentives.length;
+        uint256[] memory rewards = new uint256[](length);
         for (uint256 i = 1; i < length; i++) {
             Incentive memory incentive = incentives[i];
             uint256 reward = calcIncentiveReward(incentive, totalReward, _totalWeight);
@@ -118,18 +112,16 @@ contract OverlayV1FeeRecipient {
                 // replenish the incentive through staker
                 _replenishIncentive(incentive, startTime, endTime, address(this), reward);
 
-                // store the time span over which incentive will last
-                // for reference in registry
-                // TODO: is this really necessary?
-                spans[i].push(Span({startTime: startTime, endTime: endTime}));
-
-                // emit event to track so liquidity miners
-                // can stake existing deposit on staker
-                emit IncentiveReplenished(msg.sender, i, startTime, endTime, reward);
+                // set reward in rewards arrays for event below
+                rewards[i] = reward;
             }
         }
 
-        // set the last timestamp replenished
+        // emit event to track so liquidity miners
+        // can stake existing deposits on staker
+        emit IncentivesReplenished(msg.sender, rewards, startTime, endTime);
+
+        // update the last timestamp replenished
         blockTimestampLast = block.timestamp;
     }
 
@@ -173,18 +165,24 @@ contract OverlayV1FeeRecipient {
         address token1,
         uint24 fee
     ) public view returns (bool is_) {
-        is_ = (incentiveIds[token0][token1][fee] > 0);
+        is_ = (incentiveIdxs[token0][token1][fee] > 0);
     }
 
-    /// @notice Convenience view function
+    /// @notice Convenience view function to get incentive index in incentives
     /// @return idx_ index in incentives array
     function getIncentiveIndex(
         address token0,
         address token1,
         uint24 fee
     ) public view returns (uint256 idx_) {
-        idx_ = incentiveIds[token0][token1][fee];
+        idx_ = incentiveIdxs[token0][token1][fee];
         require(idx_ > 0, "OVLV1: !incentive");
+    }
+
+    /// @notice Convenience view function to get incentive id in staker
+    /// @return id_ ID as key in staker.incentives
+    function getStakerIncentiveId(IUniswapV3Staker.IncentiveKey memory key) public view returns (bytes32 id_) {
+        id_ = IncentiveId.compute(key);
     }
 
     /// @notice Allows governor to add incentive for new liquidity mining pool
@@ -210,15 +208,15 @@ contract OverlayV1FeeRecipient {
         // update the total weight for all incentives
         totalWeight += weight;
 
-        // store incentive id
+        // store incentive index
         // store for (token0, token1) and (token1, token0) to save gas on checks
         // SEE: https://github.com/Uniswap/v3-core/blob/main/contracts/UniswapV3Factory.sol#L48
-        uint256 id = incentives.length - 1;
-        incentiveIds[token0][token1][fee] = id;
-        incentiveIds[token1][token0][fee] = id;
+        uint256 idx = incentives.length - 1;
+        incentiveIdxs[token0][token1][fee] = idx;
+        incentiveIdxs[token1][token0][fee] = idx;
 
         // emit event to track incentive additions
-        emit IncentiveAdded(msg.sender, id, weight);
+        emit IncentiveAdded(msg.sender, idx, weight);
     }
 
     /// @notice Updates the weight on the incentive associated with the given
@@ -230,8 +228,8 @@ contract OverlayV1FeeRecipient {
         uint256 weight
     ) external onlyGovernor {
         // get the incentive (checks incentive exists as well)
-        uint256 id = getIncentiveIndex(token0, token1, fee);
-        Incentive memory incentive = incentives[id];
+        uint256 idx = getIncentiveIndex(token0, token1, fee);
+        Incentive memory incentive = incentives[idx];
 
         // update the total weights
         totalWeight = totalWeight - incentive.weight + weight;
@@ -239,9 +237,9 @@ contract OverlayV1FeeRecipient {
         // update the weight on the specific incentive
         // and store it
         incentive.weight = weight;
-        incentives[id] = incentive;
+        incentives[idx] = incentive;
 
         // emit event to track incentive updates
-        emit IncentiveUpdated(msg.sender, id, weight);
+        emit IncentiveUpdated(msg.sender, idx, weight);
     }
 }

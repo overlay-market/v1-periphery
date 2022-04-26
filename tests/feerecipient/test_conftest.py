@@ -53,6 +53,9 @@ def test_fee_recipient_fixture(fee_recipient, ovl, staker):
     fee_recipient.incentiveLeadTime() == 86400
     fee_recipient.incentiveDuration() == 31536000
 
+    # storage vars
+    fee_recipient.blockTimestampLast() == 0
+
     # incentives array initialized with a single empty element
     (token0, token1, fee, weight) = fee_recipient.incentives(0)
     assert token0 == "0x0000000000000000000000000000000000000000"
