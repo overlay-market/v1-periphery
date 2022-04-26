@@ -181,7 +181,11 @@ contract OverlayV1FeeRecipient {
 
     /// @notice Convenience view function to get incentive id in staker
     /// @return id_ ID as key in staker.incentives
-    function getStakerIncentiveId(IUniswapV3Staker.IncentiveKey memory key) public view returns (bytes32 id_) {
+    function getStakerIncentiveId(IUniswapV3Staker.IncentiveKey memory key)
+        public
+        view
+        returns (bytes32 id_)
+    {
         id_ = IncentiveId.compute(key);
     }
 
