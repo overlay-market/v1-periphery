@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.2;
 
+// COPIED AND MODIFIED FROM:
+// https://github.com/overlay-market/v3-staker/contracts/interfaces/IUniswapV3Staker.sol
+
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
@@ -28,8 +31,30 @@ interface IUniswapV3Staker is IERC721Receiver, IMulticall {
         address refundee;
     }
 
+    /// @notice The Uniswap V3 Factory
+    function factory() external view returns (IUniswapV3Factory);
+
+    /// @notice The max duration of an incentive in seconds
+    function maxIncentiveDuration() external view returns (uint256);
+
+    /// @notice The max amount of seconds into the future the incentive startTime can be set
+    function maxIncentiveStartLeadTime() external view returns (uint256);
+
     /// @notice Creates a new liquidity mining incentive program
     /// @param key Details of the incentive to create
     /// @param reward The amount of reward tokens to be distributed
     function createIncentive(IncentiveKey memory key, uint256 reward) external;
+
+    /// @notice Convenience function to create incentive setting minWidth param to max tick range
+    /// @param reward The amount of reward tokens to be distributed
+    function createIncentiveWithMaxRange(
+        IERC20Minimal rewardToken,
+        uint256 startTime,
+        uint256 endTime,
+        address refundee,
+        uint256 reward,
+        address token0,
+        address token1,
+        uint24 fee
+    ) external;
 }

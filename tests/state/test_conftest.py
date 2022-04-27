@@ -51,7 +51,6 @@ def test_feed_fixture(feed, pool_daiweth_30bps, pool_uniweth_30bps, dai, weth,
 
 
 def test_mock_feed_fixture(mock_feed, mock_feed_factory):
-    print('mock_feed', mock_feed)
     assert mock_feed.price() == 1000000000000000000
     assert mock_feed.reserve() == 2000000000000000000000000
     assert mock_feed.microWindow() == 600
