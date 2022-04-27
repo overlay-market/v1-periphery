@@ -158,10 +158,13 @@ def test_replenish_incentives_reverts_when_less_than_min_duration(
     expect_total_reward = 200000000000000000000  # 200
     ovl.transfer(fee_recipient.address, expect_total_reward, {"from": alice})
 
-    dt = fee_recipient.minReplenishDuration()
-    chain.mine(timedelta=dt)
+    # check won't replenish
     with reverts("OVLV1: duration<min"):
         fee_recipient.replenishIncentives({"from": rando})
 
+    # check does replenish if enough time has passed
+    dt = fee_recipient.minReplenishDuration()
+    chain.mine(timedelta=dt+1)
+    fee_recipient.replenishIncentives({"from": rando})
 
 # TODO: test_replenish_many_incentives

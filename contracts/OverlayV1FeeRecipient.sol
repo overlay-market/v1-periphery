@@ -67,10 +67,16 @@ contract OverlayV1FeeRecipient {
         minReplenishDuration = _minReplenishDuration;
 
         // check less than max values staker will allow
-        require(_incentiveLeadTime <= staker.maxIncentiveStartLeadTime(), "OVLV1: incentiveLeadTime>max");
+        require(
+            _incentiveLeadTime <= staker.maxIncentiveStartLeadTime(),
+            "OVLV1: incentiveLeadTime>max"
+        );
         incentiveLeadTime = _incentiveLeadTime;
 
-        require(_incentiveDuration <= staker.maxIncentiveDuration(), "OVLV1: incentiveDuration>max");
+        require(
+            _incentiveDuration <= staker.maxIncentiveDuration(),
+            "OVLV1: incentiveDuration>max"
+        );
         incentiveDuration = _incentiveDuration;
 
         // initialize first incentive array entry as empty
@@ -141,6 +147,7 @@ contract OverlayV1FeeRecipient {
 
     /// @notice Creates new liquidity mining incentive for given reward
     /// @notice over max range
+    // TODO: fix for changes to staker
     function _replenishIncentive(
         Incentive memory incentive,
         uint256 startTime,
