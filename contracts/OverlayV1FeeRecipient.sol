@@ -64,10 +64,13 @@ contract OverlayV1FeeRecipient {
     ) {
         ovl = _ovl;
         staker = _staker;
-
-        // TODO: requires on these values
         minReplenishDuration = _minReplenishDuration;
+
+        // check less than max values staker will allow
+        require(_incentiveLeadTime <= staker.maxIncentiveStartLeadTime(), "OVLV1: incentiveLeadTime>max");
         incentiveLeadTime = _incentiveLeadTime;
+
+        require(_incentiveDuration <= staker.maxIncentiveDuration(), "OVLV1: incentiveDuration>max");
         incentiveDuration = _incentiveDuration;
 
         // initialize first incentive array entry as empty

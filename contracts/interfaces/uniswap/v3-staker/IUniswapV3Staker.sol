@@ -34,6 +34,12 @@ interface IUniswapV3Staker is IERC721Receiver, IMulticall {
     /// @notice The Uniswap V3 Factory
     function factory() external view returns (IUniswapV3Factory);
 
+    /// @notice The max duration of an incentive in seconds
+    function maxIncentiveDuration() external view returns (uint256);
+
+    /// @notice The max amount of seconds into the future the incentive startTime can be set
+    function maxIncentiveStartLeadTime() external view returns (uint256);
+
     /// @notice Creates a new liquidity mining incentive program
     /// @param key Details of the incentive to create
     /// @param reward The amount of reward tokens to be distributed
