@@ -1,6 +1,12 @@
-from brownie import chain
+import pytest
+from brownie import chain, reverts
 from decimal import Decimal
 from collections import OrderedDict
+
+
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
 
 
 def test_replenish_incentives(fee_recipient, staker, pool_daiweth_30bps,
@@ -103,6 +109,59 @@ def test_replenish_incentives(fee_recipient, staker, pool_daiweth_30bps,
     })
     actual_event = tx.events['IncentivesReplenished']
     assert expect_event == actual_event
+
+
+def test_replenish_incentives_reverts_when_total_weight_zero(
+        fee_recipient, rando):
+    with reverts("OVLV1: !incentives"):
+        fee_recipient.replenishIncentives({"from": rando})
+
+
+def test_replenish_incentives_reverts_when_total_reward_zero(
+        fee_recipient, pool_daiweth_30bps, rando, gov):
+    # pool 1 incentive attributes
+    expect_pool1_token0 = pool_daiweth_30bps.token0()
+    expect_pool1_token1 = pool_daiweth_30bps.token1()
+    expect_pool1_fee = pool_daiweth_30bps.fee()
+    expect_pool1_weight = 1000000000000000000  # 1
+
+    # add incentives
+    fee_recipient.addIncentive(
+        expect_pool1_token0, expect_pool1_token1, expect_pool1_fee,
+        expect_pool1_weight, {"from": gov})
+
+    with reverts("OVLV1: reward == 0"):
+        fee_recipient.replenishIncentives({"from": rando})
+
+
+def test_replenish_incentives_reverts_when_less_than_min_duration(
+        fee_recipient, pool_daiweth_30bps, rando, alice, ovl, gov):
+    # pool 1 incentive attributes
+    expect_pool1_token0 = pool_daiweth_30bps.token0()
+    expect_pool1_token1 = pool_daiweth_30bps.token1()
+    expect_pool1_fee = pool_daiweth_30bps.fee()
+    expect_pool1_weight = 1000000000000000000  # 1
+
+    # add incentives
+    fee_recipient.addIncentive(
+        expect_pool1_token0, expect_pool1_token1, expect_pool1_fee,
+        expect_pool1_weight, {"from": gov})
+
+    # add fee rewards to fee recipient
+    expect_total_reward = 100000000000000000000  # 100
+    ovl.transfer(fee_recipient.address, expect_total_reward, {"from": alice})
+
+    # replenish first then check can't do it again for min duration
+    fee_recipient.replenishIncentives({"from": rando})
+
+    # add fee rewards to fee recipient
+    expect_total_reward = 200000000000000000000  # 200
+    ovl.transfer(fee_recipient.address, expect_total_reward, {"from": alice})
+
+    dt = fee_recipient.minReplenishDuration()
+    chain.mine(timedelta=dt)
+    with reverts("OVLV1: duration<min"):
+        fee_recipient.replenishIncentives({"from": rando})
 
 
 # TODO: test_replenish_many_incentives

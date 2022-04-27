@@ -77,7 +77,6 @@ contract OverlayV1FeeRecipient {
 
     /// @notice Creates new liquidity mining incentives using all
     /// @notice trading fees currently housed in this contract
-    // TODO: test
     function replenishIncentives() external {
         require(
             block.timestamp > blockTimestampLast + minReplenishDuration,
