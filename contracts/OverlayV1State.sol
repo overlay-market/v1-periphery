@@ -18,4 +18,27 @@ contract OverlayV1State is
     OverlayV1PositionState
 {
     constructor(IOverlayV1Factory _factory) OverlayV1BaseState(_factory) {}
+
+    /// @notice Gets relevant market info to aggregate calls into a
+    /// @notice single function
+    /// @dev WARNING: makes many calls to market associated with feed
+    /// @return state_ as the current aggregate market state
+    function marketState(address feed) external view returns (MarketState memory state_) {
+        IOverlayV1Market market = _getMarket(feed);
+        Oracle.Data memory data = _getOracleData(feed);
+
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+        state_ = MarketState({
+            bid: _bid(market, data, 0),
+            ask: _ask(market, data, 0),
+            mid: _mid(data),
+            volumeBid: _volumeBid(market, data, 0),
+            volumeAsk: _volumeAsk(market, data, 0),
+            oiLong: oiLong,
+            oiShort: oiShort,
+            capOi: _capOi(market, data),
+            circuitBreakerLevel: _circuitBreakerLevel(market),
+            fundingRate: _fundingRate(market)
+        });
+    }
 }
