@@ -91,6 +91,38 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
         return oi.divDown(cap);
     }
 
+    /// @dev f = 2 * k * ( oiLong - oiShort ) / (oiLong + oiShort)
+    /// @dev such that long > short then positive
+    function _fundingRate(IOverlayV1Market market) internal view returns (int256 fundingRate_) {
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+
+        // determine overweight vs underweight side
+        bool isLongOverweight = oiLong > oiShort;
+        uint256 oiOverweight = isLongOverweight ? oiLong : oiShort;
+        uint256 oiUnderweight = isLongOverweight ? oiShort : oiLong;
+
+        // determine total oi and imbalance in oi
+        uint256 oiTotal = oiOverweight + oiUnderweight;
+        uint256 oiImbalance = oiOverweight - oiUnderweight;
+        if (oiTotal == 0 || oiImbalance == 0) {
+            return int256(0);
+        }
+
+        // Get the k risk param for the market and then calculate funding rate
+        uint256 k = market.params(uint256(Risk.Parameters.K));
+        uint256 rate = oiImbalance.divDown(oiTotal).mulDown(2 * k);
+
+        // return mag + sign for funding rate
+        fundingRate_ = isLongOverweight ? int256(rate) : -int256(rate);
+    }
+
+    /// @dev circuit breaker level is reported as fraction of capOi in FixedPoint
+    function _circuitBreakerLevel(IOverlayV1Market market) internal view returns (uint256 circuitBreakerLevel_) {
+        // set cap to ONE as reporting level in terms of % of capOi
+        // = market.capNotionalAdjustedForCircuitBreaker(cap) / cap
+        circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(FixedPoint.ONE);
+    }
+
     /// @notice Gets the current open interest values on the Overlay market
     /// @notice associated with the given feed address accounting for funding
     /// @return oiLong_ as the current open interest long
@@ -132,26 +164,7 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
     /// @return fundingRate_ as the current funding rate
     function fundingRate(address feed) external view returns (int256 fundingRate_) {
         IOverlayV1Market market = _getMarket(feed);
-        (uint256 oiLong, uint256 oiShort) = _ois(market);
-
-        // determine overweight vs underweight side
-        bool isLongOverweight = oiLong > oiShort;
-        uint256 oiOverweight = isLongOverweight ? oiLong : oiShort;
-        uint256 oiUnderweight = isLongOverweight ? oiShort : oiLong;
-
-        // determine total oi and imbalance in oi
-        uint256 oiTotal = oiOverweight + oiUnderweight;
-        uint256 oiImbalance = oiOverweight - oiUnderweight;
-        if (oiTotal == 0 || oiImbalance == 0) {
-            return int256(0);
-        }
-
-        // Get the k risk param for the market and then calculate funding rate
-        uint256 k = market.params(uint256(Risk.Parameters.K));
-        uint256 rate = oiImbalance.divDown(oiTotal).mulDown(2 * k);
-
-        // return mag + sign for funding rate
-        fundingRate_ = isLongOverweight ? int256(rate) : -int256(rate);
+        fundingRate_ = _fundingRate(market);
     }
 
     /// @notice Gets the current level of the circuit breaker for the
@@ -165,10 +178,7 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
         returns (uint256 circuitBreakerLevel_)
     {
         IOverlayV1Market market = _getMarket(feed);
-
-        // set cap to ONE as reporting level in terms of % of capOi
-        // = market.capNotionalAdjustedForCircuitBreaker(cap) / cap
-        circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(FixedPoint.ONE);
+        circuitBreakerLevel_ = _circuitBreakerLevel(market);
     }
 
     /// @notice Gets the current rolling amount minted (+) or burned (-)
