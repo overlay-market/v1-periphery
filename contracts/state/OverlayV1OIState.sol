@@ -117,7 +117,11 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
     }
 
     /// @dev circuit breaker level is reported as fraction of capOi in FixedPoint
-    function _circuitBreakerLevel(IOverlayV1Market market) internal view returns (uint256 circuitBreakerLevel_) {
+    function _circuitBreakerLevel(IOverlayV1Market market)
+        internal
+        view
+        returns (uint256 circuitBreakerLevel_)
+    {
         // set cap to ONE as reporting level in terms of % of capOi
         // = market.capNotionalAdjustedForCircuitBreaker(cap) / cap
         circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(FixedPoint.ONE);
