@@ -19,11 +19,10 @@ contract OverlayV1State is
 {
     constructor(IOverlayV1Factory _factory) OverlayV1BaseState(_factory) {}
 
-    /// @notice Gets relevant market info into a single function
-    /// @notice to aggregate calls into one function
+    /// @notice Gets relevant market info to aggregate calls into a
+    /// @notice single function
     /// @dev WARNING: makes many calls to market associated with feed
     /// @return state_ as the current aggregate market state
-    // TODO: test
     function state(address feed) external view returns (MarketState memory state_) {
         IOverlayV1Market market = _getMarket(feed);
         Oracle.Data memory data = _getOracleData(feed);
