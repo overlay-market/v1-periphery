@@ -1,4 +1,4 @@
-def test_state(state, market, feed, ovl, alice, bob):
+def test_market_state(state, market, feed, ovl, alice, bob):
     # alice build params
     input_collateral_alice = 20000000000000000000  # 20
     input_leverage_alice = 1000000000000000000  # 1
@@ -37,5 +37,5 @@ def test_state(state, market, feed, ovl, alice, bob):
 
     expect = (bid, ask, mid, volume_bid, volume_ask, oi_long, oi_short,
               cap_oi, circuit_level, funding_rate)
-    actual = state.state(feed)
+    actual = state.marketState(feed)
     assert expect == actual
