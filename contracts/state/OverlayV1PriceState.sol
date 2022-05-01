@@ -84,7 +84,11 @@ abstract contract OverlayV1PriceState is IOverlayV1PriceState, OverlayV1BaseStat
     /// @notice given fraction of cap on open interest trade represents
     /// @dev fractionOfCapOi (i.e. oi / capOi) is FixedPoint
     /// @return bid_ as the received bid price
-    function bid(IOverlayV1Market market, uint256 fractionOfCapOi) external view returns (uint256 bid_) {
+    function bid(IOverlayV1Market market, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 bid_)
+    {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         bid_ = _bid(market, data, fractionOfCapOi);
@@ -94,7 +98,11 @@ abstract contract OverlayV1PriceState is IOverlayV1PriceState, OverlayV1BaseStat
     /// @notice given fraction of cap on open interest trade represents
     /// @dev fractionOfCapOi (i.e. oi / capOi) is FixedPoint
     /// @return ask_ as the received ask price
-    function ask(IOverlayV1Market market, uint256 fractionOfCapOi) external view returns (uint256 ask_) {
+    function ask(IOverlayV1Market market, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 ask_)
+    {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         ask_ = _ask(market, data, fractionOfCapOi);
@@ -170,7 +178,11 @@ abstract contract OverlayV1PriceState is IOverlayV1PriceState, OverlayV1BaseStat
     /// @notice of the Overlay market
     /// @return volumeBid_ as the current rolling volume on the bid
     /// @return volumeAsk_ as the current rolling volume on the ask
-    function volumes(IOverlayV1Market market) external view returns (uint256 volumeBid_, uint256 volumeAsk_) {
+    function volumes(IOverlayV1Market market)
+        external
+        view
+        returns (uint256 volumeBid_, uint256 volumeAsk_)
+    {
         // cache feed data
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);

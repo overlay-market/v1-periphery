@@ -7,10 +7,16 @@ import "./IOverlayV1BaseState.sol";
 
 interface IOverlayV1PriceState is IOverlayV1BaseState {
     // bid on the market given new volume from fractionOfCapOi
-    function bid(IOverlayV1Market market, uint256 fractionOfCapOi) external view returns (uint256 bid_);
+    function bid(IOverlayV1Market market, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 bid_);
 
     // ask on the market given new volume from fractionOfCapOi
-    function ask(IOverlayV1Market market, uint256 fractionOfCapOi) external view returns (uint256 ask_);
+    function ask(IOverlayV1Market market, uint256 fractionOfCapOi)
+        external
+        view
+        returns (uint256 ask_);
 
     // mid on the market
     function mid(IOverlayV1Market market) external view returns (uint256 mid_);
@@ -38,5 +44,8 @@ interface IOverlayV1PriceState is IOverlayV1BaseState {
         );
 
     // bid, ask volumes of the market
-    function volumes(IOverlayV1Market market) external view returns (uint256 volumeBid_, uint256 volumeAsk_);
+    function volumes(IOverlayV1Market market)
+        external
+        view
+        returns (uint256 volumeBid_, uint256 volumeAsk_);
 }

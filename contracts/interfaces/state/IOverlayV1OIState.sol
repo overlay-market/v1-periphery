@@ -8,7 +8,10 @@ import "./IOverlayV1PriceState.sol";
 
 interface IOverlayV1OIState is IOverlayV1BaseState, IOverlayV1PriceState {
     // aggregate open interest values on market
-    function ois(IOverlayV1Market market) external view returns (uint256 oiLong_, uint256 oiShort_);
+    function ois(IOverlayV1Market market)
+        external
+        view
+        returns (uint256 oiLong_, uint256 oiShort_);
 
     // cap on aggregate open interest on market
     function capOi(IOverlayV1Market market) external view returns (uint256 capOi_);

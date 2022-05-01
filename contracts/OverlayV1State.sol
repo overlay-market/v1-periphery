@@ -23,7 +23,11 @@ contract OverlayV1State is
     /// @notice single function
     /// @dev WARNING: makes many calls to market
     /// @return state_ as the current aggregate market state
-    function marketState(IOverlayV1Market market) external view returns (MarketState memory state_) {
+    function marketState(IOverlayV1Market market)
+        external
+        view
+        returns (MarketState memory state_)
+    {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
 

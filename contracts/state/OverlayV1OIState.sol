@@ -131,7 +131,11 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
     /// @notice accounting for funding
     /// @return oiLong_ as the current open interest long
     /// @return oiShort_ as the current open interest short
-    function ois(IOverlayV1Market market) external view returns (uint256 oiLong_, uint256 oiShort_) {
+    function ois(IOverlayV1Market market)
+        external
+        view
+        returns (uint256 oiLong_, uint256 oiShort_)
+    {
         (oiLong_, oiShort_) = _ois(market);
     }
 
@@ -175,7 +179,6 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
         view
         returns (uint256 circuitBreakerLevel_)
     {
-        IOverlayV1Market market = _getMarket(feed);
         circuitBreakerLevel_ = _circuitBreakerLevel(market);
     }
 

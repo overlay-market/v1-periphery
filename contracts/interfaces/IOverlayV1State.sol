@@ -27,5 +27,8 @@ interface IOverlayV1State is
         int256 fundingRate;
     }
 
-    function marketState(IOverlayV1Market market) external view returns (MarketState memory state_);
+    function marketState(IOverlayV1Market market)
+        external
+        view
+        returns (MarketState memory state_);
 }
