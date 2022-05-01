@@ -308,117 +308,105 @@ abstract contract OverlayV1PositionState is
         maintenanceMargin_ = q.mulUp(maintenanceMarginFraction);
     }
 
-    /// @notice Gets the position from the Overlay market associated with
-    /// @notice the given feed for the given position owner and position id
+    /// @notice Gets the position from the Overlay market or the given
+    /// @notice position owner and position id
     function position(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (Position.Info memory position_) {
-        IOverlayV1Market market = _getMarket(feed);
         position_ = _getPosition(market, owner, id);
     }
 
     /// @notice Gets the current debt of the position on the Overlay
-    /// @notice market associated with the given feed address for the given
-    /// @notice position owner, id
+    /// @notice market for the given position owner, id
     /// @return debt_ as the current debt taken on by the position
     function debt(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 debt_) {
-        IOverlayV1Market market = _getMarket(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         debt_ = _debt(position);
     }
 
     /// @notice Gets the current cost of the position on the Overlay
-    /// @notice market associated with the given feed address for the given
-    /// @notice position owner, id
+    /// @notice market for the given position owner, id
     /// @return cost_ as the cost to build the position
     function cost(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 cost_) {
-        IOverlayV1Market market = _getMarket(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         cost_ = _cost(position);
     }
 
     /// @notice Gets the current open interest of the position on the Overlay
-    /// @notice market associated with the given feed address for the given
-    /// @notice position owner, id
+    /// @notice market for the given position owner, id
     /// @return oi_ as the current open interest occupied by the position
     function oi(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 oi_) {
-        IOverlayV1Market market = _getMarket(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         oi_ = _oi(market, position);
     }
 
     /// @notice Gets the current collateral backing the position on the
-    /// @notice Overlay market associated with the given feed address
-    /// @notice for the given position owner, id
+    /// @notice Overlay market for the given position owner, id
     /// @dev N(t) = Q * (OI(t) / OI(0)) - D; where Q = notional at build,
     /// @dev OI(t) = current open interest, OI(0) = open interest at build,
     /// @dev D = debt at build
     /// @return collateral_ as the current collateral backing the position
     function collateral(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 collateral_) {
-        IOverlayV1Market market = _getMarket(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         collateral_ = _collateral(market, position);
     }
 
     /// @notice Gets the current value of the position on the Overlay market
-    /// @notice associated with the given feed address for the given
-    /// @notice position owner, id
+    /// @notice for the given position owner, id
     /// @return value_ as the current value of the position
     function value(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 value_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         value_ = _value(market, data, position);
     }
 
     /// @notice Gets the current notional of the position on the Overlay market
-    /// @notice associated with the given feed address for the given
-    /// @notice position owner, id (accounts for PnL)
+    /// @notice for the given position owner, id (accounts for PnL)
     /// @return notional_ as the current notional of the position
     function notional(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 notional_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         notional_ = _notional(market, data, position);
     }
 
     /// @notice Gets the trading fee charged to unwind the position on the
-    /// @notice Overlay market associated with the given feed address for
-    /// @notice the given position owner, id
+    /// @notice Overlay market for the given position owner, id
     /// @dev tradingFee = notional * tradingFeeRate
     /// @return tradingFee_ as the current trading fee charged
     function tradingFee(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 tradingFee_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         uint256 notional = _notional(market, data, position);
@@ -429,46 +417,44 @@ abstract contract OverlayV1PositionState is
     }
 
     /// @notice Gets whether the position is currently liquidatable on the Overlay
-    /// @notice market associated with the given feed address for the given
-    /// @notice position owner, id
+    /// @notice market for the given position owner, id
     /// @return liquidatable_ as whether the position is liquidatable
     function liquidatable(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (bool liquidatable_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         liquidatable_ = _liquidatable(market, data, position);
     }
 
     /// @notice Gets the liquidation fee rewarded to the liquidator if
-    /// @notice position currently liquidatable on the Overlay market associated
-    /// @notice with the given feed address for the given position owner, id
+    /// @notice position currently liquidatable on the Overlay market
+    /// @notice for the given position owner, id
     /// @dev liquidationFee_ == 0 if not liquidatable
     /// @return liquidationFee_ as the current liquidation fee reward
     function liquidationFee(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 liquidationFee_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         liquidationFee_ = _liquidationFee(market, data, position);
     }
 
     /// @notice Gets the maintenance margin required to keep the position
-    /// @notice open on the Overlay market associated with the given feed
-    /// @notice address for the given position owner, id
+    /// @notice open on the Overlay market for the given position owner, id
     /// @return maintenanceMargin_ as the maintenance margin
     function maintenanceMargin(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 maintenanceMargin_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
         maintenanceMargin_ = _maintenanceMargin(market, position);
@@ -476,17 +462,16 @@ abstract contract OverlayV1PositionState is
 
     /// @notice Gets the current position remaining margin to eat through
     /// @notice before liquidation occurs on the Overlay market
-    /// @notice associated with the given feed address for the given
-    /// @notice position owner, id
+    /// @notice for the given position owner, id
     /// @dev excess_ > 0: returns excess margin before liquidation
     /// @dev excess_ < 0, returns margin lost due to delayed liquidation
     /// @return excess_ as the current value less maintenance and liq fees
     function marginExcessBeforeLiquidation(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (int256 excess_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
 
@@ -498,15 +483,14 @@ abstract contract OverlayV1PositionState is
     }
 
     /// @notice Gets the current liquidation price of the position on the
-    /// @notice Overlay market associated with the given feed address
-    /// @notice for the given position owner, id
+    /// @notice Overlay market for the given position owner, id
     /// @return liquidationPrice_ as the current liquidation price
     function liquidationPrice(
-        address feed,
+        IOverlayV1Market market,
         address owner,
         uint256 id
     ) external view returns (uint256 liquidationPrice_) {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
 

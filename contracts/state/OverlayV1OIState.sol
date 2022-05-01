@@ -128,71 +128,65 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
     }
 
     /// @notice Gets the current open interest values on the Overlay market
-    /// @notice associated with the given feed address accounting for funding
+    /// @notice accounting for funding
     /// @return oiLong_ as the current open interest long
     /// @return oiShort_ as the current open interest short
-    function ois(address feed) external view returns (uint256 oiLong_, uint256 oiShort_) {
-        IOverlayV1Market market = _getMarket(feed);
+    function ois(IOverlayV1Market market)
+        external
+        view
+        returns (uint256 oiLong_, uint256 oiShort_)
+    {
         (oiLong_, oiShort_) = _ois(market);
     }
 
     /// @notice Gets the current cap on open interest on the Overlay market
-    /// @notice associated with the given feed address accounting for
-    /// @notice front and back-running bounds
+    /// @notice accounting for front and back-running bounds
     /// @return capOi_ as the current open interest cap
-    function capOi(address feed) external view returns (uint256 capOi_) {
-        IOverlayV1Market market = _getMarket(feed);
+    function capOi(IOverlayV1Market market) external view returns (uint256 capOi_) {
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         capOi_ = _capOi(market, data);
     }
 
     /// @notice Gets the fraction of the current open interest cap the
     /// @notice given oi contracts represents on the Overlay market
-    /// @notice associated with the given feed address
     /// @dev fractionOfCapOi = oi / capOi is FixedPoint
     /// @return fractionOfCapOi_ as fraction of open interest cap given oi is
-    function fractionOfCapOi(address feed, uint256 oi)
+    function fractionOfCapOi(IOverlayV1Market market, uint256 oi)
         external
         view
         returns (uint256 fractionOfCapOi_)
     {
-        IOverlayV1Market market = _getMarket(feed);
+        address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
         fractionOfCapOi_ = _fractionOfCapOi(market, data, oi);
     }
 
     /// @notice Gets the current funding rate on the Overlay market
-    /// @notice associated with the given feed address
     /// @dev f = 2 * k * ( oiLong - oiShort ) / (oiLong + oiShort)
     /// @dev such that long > short then positive
     /// @return fundingRate_ as the current funding rate
-    function fundingRate(address feed) external view returns (int256 fundingRate_) {
-        IOverlayV1Market market = _getMarket(feed);
+    function fundingRate(IOverlayV1Market market) external view returns (int256 fundingRate_) {
         fundingRate_ = _fundingRate(market);
     }
 
     /// @notice Gets the current level of the circuit breaker for the
-    /// @notice open interest cap on the Overlay market associated with
-    /// @notice the given feed address
+    /// @notice open interest cap on the Overlay market
     /// @dev circuit breaker level is reported as fraction of capOi in FixedPoint
     /// @return circuitBreakerLevel_ as the current circuit breaker level
-    function circuitBreakerLevel(address feed)
+    function circuitBreakerLevel(IOverlayV1Market market)
         external
         view
         returns (uint256 circuitBreakerLevel_)
     {
-        IOverlayV1Market market = _getMarket(feed);
         circuitBreakerLevel_ = _circuitBreakerLevel(market);
     }
 
     /// @notice Gets the current rolling amount minted (+) or burned (-)
-    /// @notice by the Overlay market associated with the given feed address
+    /// @notice by the Overlay market
     /// @dev minted_ > 0 means more OVL has been minted than burned recently
     /// @return minted_ as the current rolling amount minted
-    function minted(address feed) external view returns (int256 minted_) {
-        // cache market
-        IOverlayV1Market market = _getMarket(feed);
-
+    function minted(IOverlayV1Market market) external view returns (int256 minted_) {
         // assemble the rolling amount minted snapshot
         (uint32 timestamp, uint32 window, int192 accumulator) = market.snapshotMinted();
         Roller.Snapshot memory snapshot = Roller.Snapshot({
