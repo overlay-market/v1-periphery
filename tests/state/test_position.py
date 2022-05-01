@@ -37,7 +37,7 @@ def test_position(state, market, feed, alice, ovl):
 
     # check market position is same as position returned from state
     expect = market.positions(pos_key)
-    actual = state.position(feed, alice.address, pos_id)
+    actual = state.position(market, alice.address, pos_id)
 
     assert expect == actual
 
@@ -63,7 +63,7 @@ def test_debt(state, market, feed, ovl, alice):
 
     # check market position debt same as state queried position debt
     (_, expect_debt, _, _, _, _) = market.positions(pos_key)
-    actual_debt = state.debt(feed, alice.address, pos_id)
+    actual_debt = state.debt(market, alice.address, pos_id)
 
     assert expect_debt == actual_debt
 
@@ -91,7 +91,7 @@ def test_cost(state, market, feed, ovl, alice):
     (expect_notional_initial, expect_debt, _, _,
      _, _) = market.positions(pos_key)
     expect_cost = expect_notional_initial - expect_debt
-    actual_cost = state.cost(feed, alice.address, pos_id)
+    actual_cost = state.cost(market, alice.address, pos_id)
 
     assert expect_cost == actual_cost
 
@@ -120,14 +120,14 @@ def test_oi(state, market, feed, ovl, alice):
     expect_oi_long_shares = market.oiLongShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, _ = state.ois(feed)
+    actual_oi_long, _ = state.ois(market)
 
     # check expect equals actual for position oi
     expect_oi = int(
         Decimal(actual_oi_long) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_long_shares)
     )
-    actual_oi = int(state.oi(feed, alice.address, pos_id))
+    actual_oi = int(state.oi(market, alice.address, pos_id))
     assert expect_oi == approx(actual_oi)
 
     # forward the chain to check oi expectations in line after funding
@@ -135,14 +135,14 @@ def test_oi(state, market, feed, ovl, alice):
 
     # NOTE: ois() tests in test_oi.py
     expect_oi_long_shares = market.oiLongShares()
-    actual_oi_long, _ = state.ois(feed)
+    actual_oi_long, _ = state.ois(market)
 
     # check expect equals actual for position oi
     expect_oi = int(
         Decimal(actual_oi_long) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_long_shares)
     )
-    actual_oi = int(state.oi(feed, alice.address, pos_id))
+    actual_oi = int(state.oi(market, alice.address, pos_id))
     assert expect_oi == approx(actual_oi)
 
 
@@ -171,7 +171,7 @@ def test_collateral(state, market, feed, ovl, alice):
     expect_oi_long_shares = market.oiLongShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, _ = state.ois(feed)
+    actual_oi_long, _ = state.ois(market)
 
     # calculate the expected collateral amount: Q * (OI(t) / OI(0)) - D
     expect_oi = int(
@@ -183,7 +183,7 @@ def test_collateral(state, market, feed, ovl, alice):
                             * (expect_oi / expect_oi_initial) - expect_debt)
 
     # check expect collateral matches actual queried from state
-    actual_collateral = int(state.collateral(feed, alice.address, pos_id))
+    actual_collateral = int(state.collateral(market, alice.address, pos_id))
     assert expect_collateral == approx(actual_collateral)
 
     # forward the chain to check collateral expectations in line after funding
@@ -191,7 +191,7 @@ def test_collateral(state, market, feed, ovl, alice):
 
     # NOTE: ois() tests in test_oi.py
     expect_oi_long_shares = market.oiLongShares()
-    actual_oi_long, _ = state.ois(feed)
+    actual_oi_long, _ = state.ois(market)
 
     # calculate the expected collateral amount: Q * (OI(t) / OI(0)) - D
     expect_oi = int(
@@ -203,7 +203,7 @@ def test_collateral(state, market, feed, ovl, alice):
                             * (expect_oi / expect_oi_initial) - expect_debt)
 
     # check expect collateral matches actual queried from state
-    actual_collateral = int(state.collateral(feed, alice.address, pos_id))
+    actual_collateral = int(state.collateral(market, alice.address, pos_id))
     assert expect_collateral == approx(actual_collateral)
 
 
@@ -235,7 +235,7 @@ def test_value(state, market, feed, ovl, alice, is_long):
         else market.oiShortShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, actual_oi_short = state.ois(feed)
+    actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
     # calculate the expected value of position
@@ -251,11 +251,11 @@ def test_value(state, market, feed, ovl, alice, is_long):
     expect_entry_price = int(expect_entry_price)
 
     # NOTE: fractionOfCapOi tests in test_oi.py
-    frac_cap_oi = state.fractionOfCapOi(feed, expect_oi)
+    frac_cap_oi = state.fractionOfCapOi(market, expect_oi)
 
     # NOTE: bid, ask tests in test_price.py
     expect_exit_price = state.bid(
-        feed, frac_cap_oi) if is_long else state.ask(feed, frac_cap_oi)
+        market, frac_cap_oi) if is_long else state.ask(market, frac_cap_oi)
     expect_exit_price = int(expect_exit_price)
 
     # calculate value with collateral + PnL from price deltas
@@ -268,7 +268,7 @@ def test_value(state, market, feed, ovl, alice, is_long):
     expect_value = int(expect_collateral + expect_pnl)
 
     # check expect value in line with actual from state
-    actual_value = int(state.value(feed, alice.address, pos_id))
+    actual_value = int(state.value(market, alice.address, pos_id))
     assert expect_value == approx(actual_value)
 
 
@@ -300,7 +300,7 @@ def test_notional(state, market, feed, ovl, alice, is_long):
         else market.oiShortShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, actual_oi_short = state.ois(feed)
+    actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
     # calculate the expected value of position
@@ -316,11 +316,11 @@ def test_notional(state, market, feed, ovl, alice, is_long):
     expect_entry_price = int(expect_entry_price)
 
     # NOTE: fractionOfCapOi tests in test_oi.py
-    frac_cap_oi = state.fractionOfCapOi(feed, expect_oi)
+    frac_cap_oi = state.fractionOfCapOi(market, expect_oi)
 
     # NOTE: bid, ask tests in test_price.py
     expect_exit_price = state.bid(
-        feed, frac_cap_oi) if is_long else state.ask(feed, frac_cap_oi)
+        market, frac_cap_oi) if is_long else state.ask(market, frac_cap_oi)
     expect_exit_price = int(expect_exit_price)
 
     # calculate value with collateral + PnL + debt from price deltas
@@ -334,7 +334,7 @@ def test_notional(state, market, feed, ovl, alice, is_long):
     expect_notional = int(expect_collateral + expect_pnl + expect_debt)
 
     # check expect notional in line with actual from state
-    actual_notional = int(state.notional(feed, alice.address, pos_id))
+    actual_notional = int(state.notional(market, alice.address, pos_id))
     assert expect_notional == approx(actual_notional)
 
 
@@ -366,7 +366,7 @@ def test_trading_fee(state, market, feed, ovl, alice, is_long):
         else market.oiShortShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, actual_oi_short = state.ois(feed)
+    actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
     # calculate the expected value of position
@@ -382,11 +382,11 @@ def test_trading_fee(state, market, feed, ovl, alice, is_long):
     expect_entry_price = int(expect_entry_price)
 
     # NOTE: fractionOfCapOi tests in test_oi.py
-    frac_cap_oi = state.fractionOfCapOi(feed, expect_oi)
+    frac_cap_oi = state.fractionOfCapOi(market, expect_oi)
 
     # NOTE: bid, ask tests in test_price.py
     expect_exit_price = state.bid(
-        feed, frac_cap_oi) if is_long else state.ask(feed, frac_cap_oi)
+        market, frac_cap_oi) if is_long else state.ask(market, frac_cap_oi)
     expect_exit_price = int(expect_exit_price)
 
     # calculate value with collateral + PnL + debt from price deltas
@@ -407,7 +407,7 @@ def test_trading_fee(state, market, feed, ovl, alice, is_long):
         expect_trading_fee_rate) * expect_notional / Decimal(1e18)
 
     # check expect trade fee in line with actual from state
-    actual_trading_fee = int(state.tradingFee(feed, alice.address, pos_id))
+    actual_trading_fee = int(state.tradingFee(market, alice.address, pos_id))
     assert expect_trading_fee == approx(actual_trading_fee)
 
 
@@ -440,20 +440,22 @@ def test_liquidatable(state, mock_market, mock_feed, ovl, alice, is_long):
 
     # check not liquidatable
     expect_liquidatable = False
-    actual_liquidatable = state.liquidatable(mock_feed, alice.address, pos_id)
+    actual_liquidatable = state.liquidatable(
+        mock_market, alice.address, pos_id)
     assert expect_liquidatable == actual_liquidatable
 
     # set price to just beyond liquidation price and make sure liquidatable
     # NOTE: liquidationPrice() tests below in test_liquidation_price
     expect_liquidation_price = state.liquidationPrice(
-        mock_feed, alice.address, pos_id)
+        mock_market, alice.address, pos_id)
     mock_feed_price = expect_liquidation_price * \
         (1 - tol) if is_long else expect_liquidation_price * (1 + tol)
     mock_feed.setPrice(mock_feed_price, {"from": alice})
 
     # check liquidatable
     expect_liquidatable = True
-    actual_liquidatable = state.liquidatable(mock_feed, alice.address, pos_id)
+    actual_liquidatable = state.liquidatable(
+        mock_market, alice.address, pos_id)
     assert expect_liquidatable == actual_liquidatable
 
     # set price to just before liquidation price and make sure not liquidatable
@@ -463,7 +465,8 @@ def test_liquidatable(state, mock_market, mock_feed, ovl, alice, is_long):
 
     # check no longer liquidatable
     expect_liquidatable = False
-    actual_liquidatable = state.liquidatable(mock_feed, alice.address, pos_id)
+    actual_liquidatable = state.liquidatable(
+        mock_market, alice.address, pos_id)
     assert expect_liquidatable == actual_liquidatable
 
 
@@ -489,7 +492,7 @@ def test_liquidation_fee(state, mock_market, mock_feed, ovl, alice, is_long):
     # set price to just beyond liquidation price
     # NOTE: liquidationPrice() tests below in test_liquidation_price
     expect_liquidation_price = state.liquidationPrice(
-        mock_feed, alice.address, pos_id)
+        mock_market, alice.address, pos_id)
     mock_feed_price = expect_liquidation_price * \
         (1 - tol) if is_long else expect_liquidation_price * (1 + tol)
     mock_feed.setPrice(mock_feed_price, {"from": alice})
@@ -505,7 +508,7 @@ def test_liquidation_fee(state, mock_market, mock_feed, ovl, alice, is_long):
         else mock_market.oiShortShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, actual_oi_short = state.ois(mock_feed)
+    actual_oi_long, actual_oi_short = state.ois(mock_market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
     # calculate the expected value of position
@@ -522,7 +525,7 @@ def test_liquidation_fee(state, mock_market, mock_feed, ovl, alice, is_long):
 
     # mid used for liquidation exit (manipulation resistant)
     # NOTE: mid tests in test_price.py
-    expect_exit_price = state.mid(mock_feed)
+    expect_exit_price = state.mid(mock_market)
     expect_exit_price = int(expect_exit_price)
 
     # calculate value with collateral + PnL from price deltas
@@ -542,7 +545,7 @@ def test_liquidation_fee(state, mock_market, mock_feed, ovl, alice, is_long):
 
     # check expect liq fee reward in line with actual
     actual_liq_fee = int(state.liquidationFee(
-        mock_feed, alice.address, pos_id))
+        mock_market, alice.address, pos_id))
     assert expect_liq_fee == approx(actual_liq_fee)
 
 
@@ -579,7 +582,7 @@ def test_maintenance_margin(state, market, feed, ovl, alice):
 
     # check expect maintenance in line with actual from state
     actual_maintenance_margin = int(
-        state.maintenanceMargin(feed, alice.address, pos_id))
+        state.maintenanceMargin(market, alice.address, pos_id))
     assert expect_maintenance_margin == approx(actual_maintenance_margin)
 
 
@@ -607,7 +610,7 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     # set price to just before liquidation price
     # NOTE: liquidationPrice() tests below in test_liquidation_price
     expect_liquidation_price = state.liquidationPrice(
-        mock_feed, alice.address, pos_id)
+        mock_market, alice.address, pos_id)
     mock_feed_price = expect_liquidation_price * \
         (1 + tol) if is_long else expect_liquidation_price * (1 - tol)
     mock_feed.setPrice(mock_feed_price, {"from": alice})
@@ -623,7 +626,7 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
         else mock_market.oiShortShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, actual_oi_short = state.ois(mock_feed)
+    actual_oi_long, actual_oi_short = state.ois(mock_market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
     # calculate the expected value of position
@@ -640,7 +643,7 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
 
     # mid used for liquidation exit (manipulation resistant)
     # NOTE: mid tests in test_price.py
-    expect_exit_price = state.mid(mock_feed)
+    expect_exit_price = state.mid(mock_market)
     expect_exit_price = int(expect_exit_price)
 
     # calculate value with collateral + PnL from price deltas
@@ -658,17 +661,17 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     # calculate expect liquidation fee as percentage on expected value left
     # NOTE: liquidationFee tests above
     expect_liq_fee = int(state.liquidationFee(
-        mock_feed, alice.address, pos_id))
+        mock_market, alice.address, pos_id))
 
     # calculate the expect maintenance margin
     # NOTE: maintenanceMargin tests above
     expect_maintenance_margin = int(
-        state.maintenanceMargin(mock_feed, alice.address, pos_id))
+        state.maintenanceMargin(mock_market, alice.address, pos_id))
 
     # calculate expected excess
     expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
     actual_excess = int(state.marginExcessBeforeLiquidation(
-        mock_feed, alice.address, pos_id))
+        mock_market, alice.address, pos_id))
 
     # TODO: why rel tol needed here?
     assert expect_excess == approx(actual_excess, rel=1e-3)
@@ -676,14 +679,14 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     # repeat the same when excess < 0
     # set price to just beyond liquidation price
     expect_liquidation_price = state.liquidationPrice(
-        mock_feed, alice.address, pos_id)
+        mock_market, alice.address, pos_id)
     mock_feed_price = expect_liquidation_price * \
         (1 - tol) if is_long else expect_liquidation_price * (1 + tol)
     mock_feed.setPrice(mock_feed_price, {"from": alice})
 
     # mid used for liquidation exit (manipulation resistant)
     # NOTE: mid tests in test_price.py
-    expect_exit_price = state.mid(mock_feed)
+    expect_exit_price = state.mid(mock_market)
     expect_exit_price = int(expect_exit_price)
 
     # calculate value with collateral + PnL from price deltas
@@ -701,17 +704,17 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     # calculate expect liquidation fee as percentage on expected value left
     # NOTE: liquidationFee tests above
     expect_liq_fee = int(state.liquidationFee(
-        mock_feed, alice.address, pos_id))
+        mock_market, alice.address, pos_id))
 
     # calculate the expect maintenance margin
     # NOTE: maintenanceMargin tests above
     expect_maintenance_margin = int(
-        state.maintenanceMargin(mock_feed, alice.address, pos_id))
+        state.maintenanceMargin(mock_market, alice.address, pos_id))
 
     # calculate expected excess
     expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
     actual_excess = int(state.marginExcessBeforeLiquidation(
-        mock_feed, alice.address, pos_id))
+        mock_market, alice.address, pos_id))
 
     # TODO: why rel tol needed here?
     assert expect_excess == approx(actual_excess, rel=1e-3)
@@ -745,7 +748,7 @@ def test_liquidation_price(state, market, feed, ovl, alice, is_long):
         else market.oiShortShares()
 
     # NOTE: ois() tests in test_oi.py
-    actual_oi_long, actual_oi_short = state.ois(feed)
+    actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
     # calculate the expected value of position
@@ -787,7 +790,7 @@ def test_liquidation_price(state, market, feed, ovl, alice, is_long):
 
     # check expect liq price in line with actual from state
     actual_liquidation_price = int(
-        state.liquidationPrice(feed, alice.address, pos_id))
+        state.liquidationPrice(market, alice.address, pos_id))
     assert expect_liquidation_price == approx(actual_liquidation_price)
 
 
@@ -795,4 +798,4 @@ def test_liquidation_price_reverts_when_oi_is_zero(state, market, feed,
                                                    ovl, alice):
     # try for a position that doesn't exist
     with reverts("OVLV1: oi == 0"):
-        _ = state.liquidationPrice(feed, alice.address, 0)
+        _ = state.liquidationPrice(market, alice.address, 0)

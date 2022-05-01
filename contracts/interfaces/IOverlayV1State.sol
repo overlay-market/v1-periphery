@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
+import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
+
 import "./state/IOverlayV1BaseState.sol";
 import "./state/IOverlayV1PriceState.sol";
 import "./state/IOverlayV1OIState.sol";
@@ -25,5 +27,5 @@ interface IOverlayV1State is
         int256 fundingRate;
     }
 
-    function marketState(address feed) external view returns (MarketState memory state_);
+    function marketState(IOverlayV1Market market) external view returns (MarketState memory state_);
 }

@@ -16,7 +16,7 @@ def test_mid(state, market, feed):
     data = feed.latest()
 
     expect = int(mid_from_feed(data))
-    actual = state.mid(feed)
+    actual = state.mid(market)
 
     assert expect == approx(actual)
 
@@ -38,7 +38,7 @@ def test_bid(state, market, feed, fraction):
     (_, _, accumulator) = snap
 
     expect = market.bid(data, accumulator)
-    actual = state.bid(feed, fraction)
+    actual = state.bid(market, fraction)
     assert expect == actual
 
 
@@ -80,7 +80,7 @@ def test_bid_when_oi_on_market(state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(market.bid(data, accumulator))
-    actual = int(state.bid(feed, fraction))
+    actual = int(state.bid(market, fraction))
     assert expect == approx(actual)
 
 
@@ -101,7 +101,7 @@ def test_ask(state, market, feed, fraction):
     (_, _, accumulator) = snap
 
     expect = market.ask(data, accumulator)
-    actual = state.ask(feed, fraction)
+    actual = state.ask(market, fraction)
     assert expect == actual
 
 
@@ -143,7 +143,7 @@ def test_ask_when_oi_on_market(state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(market.ask(data, accumulator))
-    actual = int(state.ask(feed, fraction))
+    actual = int(state.ask(market, fraction))
     assert expect == approx(actual)
 
 
@@ -169,7 +169,7 @@ def test_prices(state, market, feed):
     expect_ask = int(market.ask(data, accumulator_ask))
     expect_mid = int(mid_from_feed(data))
 
-    (actual_bid, actual_ask, actual_mid) = state.prices(feed)
+    (actual_bid, actual_ask, actual_mid) = state.prices(market)
 
     assert expect_bid == approx(int(actual_bid))
     assert expect_ask == approx(int(actual_ask))
@@ -231,7 +231,7 @@ def test_prices_when_oi_on_market(state, market, feed, ovl, alice, bob,
     expect_ask = int(market.ask(data, accumulator_ask))
     expect_mid = int(mid_from_feed(data))
 
-    (actual_bid, actual_ask, actual_mid) = state.prices(feed)
+    (actual_bid, actual_ask, actual_mid) = state.prices(market)
 
     assert expect_bid == approx(int(actual_bid))
     assert expect_ask == approx(int(actual_ask))

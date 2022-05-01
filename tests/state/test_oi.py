@@ -1,6 +1,6 @@
 import pytest
 from pytest import approx
-from brownie import chain, reverts
+from brownie import chain
 from brownie.test import given, strategy
 from decimal import Decimal
 from math import exp, sqrt
@@ -35,7 +35,7 @@ def test_ois(state, market, feed, ovl, alice, bob):
                  input_is_long_alice, input_price_limit_alice, {"from": alice})
 
     # get the actual values
-    actual_oi_long, actual_oi_short = state.ois(feed)
+    actual_oi_long, actual_oi_short = state.ois(market)
 
     # get mid price
     data = feed.latest()
@@ -55,7 +55,7 @@ def test_ois(state, market, feed, ovl, alice, bob):
                  input_is_long_bob, input_price_limit_bob, {"from": bob})
 
     # get the actual values
-    actual_oi_long, actual_oi_short = state.ois(feed)
+    actual_oi_long, actual_oi_short = state.ois(market)
 
     # get mid price
     data = feed.latest()
@@ -82,7 +82,7 @@ def test_ois(state, market, feed, ovl, alice, bob):
     chain.mine(timedelta=dt)
 
     # get the actual values
-    actual_oi_long, actual_oi_short = state.ois(feed)
+    actual_oi_long, actual_oi_short = state.ois(market)
 
     expect_oi_imb = Decimal(expect_oi_long - expect_oi_short)
     expect_oi_tot = Decimal(expect_oi_long + expect_oi_short)
@@ -102,19 +102,14 @@ def test_ois(state, market, feed, ovl, alice, bob):
     assert int(actual_oi_short) == approx(expect_oi_short)
 
 
-def test_ois_is_zero_when_no_positions(state, feed):
-    actual_oi_long, actual_oi_short = state.ois(feed)
+def test_ois_is_zero_when_no_positions(state, market, feed):
+    actual_oi_long, actual_oi_short = state.ois(market)
     assert actual_oi_long == 0
     assert actual_oi_short == 0
 
 
-def test_ois_reverts_when_no_market(state, rando):
-    with reverts("OVLV1:!market"):
-        _, _ = state.ois(rando)
-
-
 def test_cap_oi(state, market, feed):
-    actual = state.capOi(feed)
+    actual = state.capOi(market)
 
     data = feed.latest()
     cap = market.params(RiskParameter.CAP_NOTIONAL.value)
@@ -125,17 +120,12 @@ def test_cap_oi(state, market, feed):
     assert expect == approx(int(actual))
 
 
-def test_cap_oi_reverts_when_no_market(state, rando):
-    with reverts("OVLV1:!market"):
-        _ = state.capOi(rando)
-
-
-def test_fraction_of_cap_oi(state, feed):
+def test_fraction_of_cap_oi(state, market, feed):
     oi = 1000000000000000000  # 1
-    actual = state.fractionOfCapOi(feed, oi)
+    actual = state.fractionOfCapOi(market, oi)
 
     # NOTE: capOi tested above
-    cap_oi = state.capOi(feed)
+    cap_oi = state.capOi(market)
     expect = int(Decimal(oi) * Decimal(1e18) / Decimal(cap_oi))
 
     assert expect == approx(int(actual))
@@ -151,14 +141,8 @@ def test_fraction_of_cap_oi_when_cap_zero(state, factory, market,
     assert market.params(RiskParameter.CAP_NOTIONAL.value) == 0
 
     expect = 2**256 - 1
-    actual = state.fractionOfCapOi(feed, oi)
+    actual = state.fractionOfCapOi(market, oi)
     assert expect == actual
-
-
-def test_fraction_of_cap_oi_reverts_when_no_market(state, rando):
-    oi = 1000000000000000000  # 1
-    with reverts("OVLV1:!market"):
-        _ = state.fractionOfCapOi(rando, oi)
 
 
 def test_funding_rate_when_long_gt_short(state, feed, ovl, market,
@@ -190,7 +174,7 @@ def test_funding_rate_when_long_gt_short(state, feed, ovl, market,
 
     # get current ois state
     # NOTE: ois tested above
-    oi_long, oi_short = state.ois(feed)
+    oi_long, oi_short = state.ois(market)
     oi_imb = oi_long - oi_short
     oi_tot = oi_long + oi_short
 
@@ -199,7 +183,7 @@ def test_funding_rate_when_long_gt_short(state, feed, ovl, market,
 
     # calculate instantaneous funding rate
     expect = int(Decimal(2 * k) * Decimal(oi_imb) / Decimal(oi_tot))
-    actual = state.fundingRate(feed)
+    actual = state.fundingRate(market)
 
     assert expect == approx(int(actual))
 
@@ -209,13 +193,13 @@ def test_funding_rate_when_long_gt_short(state, feed, ovl, market,
 
     # get current ois state
     # NOTE: ois tested above
-    oi_long, oi_short = state.ois(feed)
+    oi_long, oi_short = state.ois(market)
     oi_imb = oi_long - oi_short
     oi_tot = oi_long + oi_short
 
     # calculate instantaneous funding rate
     expect = int(Decimal(2 * k) * Decimal(oi_imb) / Decimal(oi_tot))
-    actual = state.fundingRate(feed)
+    actual = state.fundingRate(market)
 
     assert expect == approx(int(actual))
 
@@ -249,7 +233,7 @@ def test_funding_rate_when_short_gt_long(state, feed, ovl, market,
 
     # get current ois state
     # NOTE: ois tested above
-    oi_long, oi_short = state.ois(feed)
+    oi_long, oi_short = state.ois(market)
     oi_imb = oi_long - oi_short
     oi_tot = oi_long + oi_short
 
@@ -258,7 +242,7 @@ def test_funding_rate_when_short_gt_long(state, feed, ovl, market,
 
     # calculate instantaneous funding rate
     expect = int(Decimal(2 * k) * Decimal(oi_imb) / Decimal(oi_tot))
-    actual = state.fundingRate(feed)
+    actual = state.fundingRate(market)
 
     assert expect == approx(int(actual))
 
@@ -268,20 +252,20 @@ def test_funding_rate_when_short_gt_long(state, feed, ovl, market,
 
     # get current ois state
     # NOTE: ois tested above
-    oi_long, oi_short = state.ois(feed)
+    oi_long, oi_short = state.ois(market)
     oi_imb = oi_long - oi_short
     oi_tot = oi_long + oi_short
 
     # calculate instantaneous funding rate
     expect = int(Decimal(2 * k) * Decimal(oi_imb) / Decimal(oi_tot))
-    actual = state.fundingRate(feed)
+    actual = state.fundingRate(market)
 
     assert expect == approx(int(actual))
 
 
-def test_funding_rate_when_oi_zero(state, feed):
+def test_funding_rate_when_oi_zero(state, market, feed):
     expect = 0
-    actual = state.fundingRate(feed)
+    actual = state.fundingRate(market)
     assert expect == actual
 
 
@@ -309,7 +293,7 @@ def test_circuit_breaker_level(state, feed, ovl, market,
     # check circuit breaker level matches expect
     one = 1000000000000000000
     expect = int(market.capNotionalAdjustedForCircuitBreaker(one))
-    actual = int(state.circuitBreakerLevel(feed))
+    actual = int(state.circuitBreakerLevel(market))
     assert expect == approx(actual)
 
 
@@ -348,6 +332,6 @@ def test_minted(state, feed, ovl, market,
     (_, _, accumulator) = snap
 
     expect = int(accumulator)
-    actual = int(state.minted(feed))
+    actual = int(state.minted(market))
 
     assert expect == approx(actual)

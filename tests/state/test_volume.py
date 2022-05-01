@@ -50,7 +50,7 @@ def test_volume_bid(state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(accumulator)
-    actual = int(state.volumeBid(feed, fraction))
+    actual = int(state.volumeBid(market, fraction))
 
     assert expect == approx(actual)
 
@@ -93,7 +93,7 @@ def test_volume_ask(state, market, feed, initial_fraction,
     (_, _, accumulator) = snap
 
     expect = int(accumulator)
-    actual = int(state.volumeAsk(feed, fraction))
+    actual = int(state.volumeAsk(market, fraction))
 
     assert expect == approx(actual)
 
@@ -152,7 +152,7 @@ def test_volumes(state, market, feed, ovl, alice, bob,
     expect_volume_bid = int(accumulator_bid)
     expect_volume_ask = int(accumulator_ask)
 
-    (actual_volume_bid, actual_volume_ask) = state.volumes(feed)
+    (actual_volume_bid, actual_volume_ask) = state.volumes(market)
 
     assert expect_volume_bid == approx(int(actual_volume_bid))
     assert expect_volume_ask == approx(int(actual_volume_ask))
