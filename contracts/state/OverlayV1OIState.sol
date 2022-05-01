@@ -175,6 +175,7 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
         view
         returns (uint256 circuitBreakerLevel_)
     {
+        IOverlayV1Market market = _getMarket(feed);
         circuitBreakerLevel_ = _circuitBreakerLevel(market);
     }
 
