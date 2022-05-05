@@ -44,20 +44,20 @@ def test_staker_fixture(staker, uni_factory, pos_manager):
     staker.maxIncentiveDuration() == 63072000
 
 
-def test_fee_recipient_fixture(fee_recipient, ovl, staker):
-    fee_recipient.ovl() == ovl
-    fee_recipient.staker() == staker
+def test_fee_disperser_fixture(fee_disperser, ovl, staker):
+    fee_disperser.ovl() == ovl
+    fee_disperser.staker() == staker
 
     # immutables
-    fee_recipient.minReplenishDuration() == 2592000
-    fee_recipient.incentiveLeadTime() == 86400
-    fee_recipient.incentiveDuration() == 31536000
+    fee_disperser.minReplenishDuration() == 2592000
+    fee_disperser.incentiveLeadTime() == 86400
+    fee_disperser.incentiveDuration() == 31536000
 
     # storage vars
-    fee_recipient.blockTimestampLast() == 0
+    fee_disperser.blockTimestampLast() == 0
 
     # incentives array initialized with a single empty element
-    (token0, token1, fee, weight) = fee_recipient.incentives(0)
+    (token0, token1, fee, weight) = fee_disperser.incentives(0)
     assert token0 == "0x0000000000000000000000000000000000000000"
     assert token1 == "0x0000000000000000000000000000000000000000"
     assert fee == 0
@@ -65,4 +65,4 @@ def test_fee_recipient_fixture(fee_recipient, ovl, staker):
 
     # check only one element has been added to incentives
     with reverts():
-        fee_recipient.incentives(1)
+        fee_disperser.incentives(1)

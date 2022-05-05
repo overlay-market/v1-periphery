@@ -1,5 +1,5 @@
 import pytest
-from brownie import Contract, OverlayV1FeeRecipient, web3
+from brownie import Contract, OverlayV1FeeDisperser, web3
 
 
 @pytest.fixture(scope="module")
@@ -117,18 +117,18 @@ def staker():
 
 
 @pytest.fixture(scope="module", params=[(2592000, 86400, 31536000)])
-def create_fee_recipient(ovl, staker, rando, request):
+def create_fee_disperser(ovl, staker, rando, request):
     min_replenish_duration, incentive_lead, incentive_duration = request.param
 
-    def create_fee_recipient(repl_duration=min_replenish_duration,
+    def create_fee_disperser(repl_duration=min_replenish_duration,
                              lead=incentive_lead, duration=incentive_duration):
-        fee_recipient = rando.deploy(
-            OverlayV1FeeRecipient, ovl, staker, repl_duration, lead, duration)
-        return fee_recipient
+        fee_disperser = rando.deploy(
+            OverlayV1FeeDisperser, ovl, staker, repl_duration, lead, duration)
+        return fee_disperser
 
-    yield create_fee_recipient
+    yield create_fee_disperser
 
 
 @pytest.fixture(scope="module")
-def fee_recipient(create_fee_recipient):
-    yield create_fee_recipient()
+def fee_disperser(create_fee_disperser):
+    yield create_fee_disperser()
