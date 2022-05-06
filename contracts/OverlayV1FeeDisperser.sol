@@ -10,7 +10,7 @@ import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import "./interfaces/uniswap/v3-staker/IUniswapV3Staker.sol";
 import "./libraries/uniswap/v3-staker/IncentiveId.sol";
 
-contract OverlayV1FeeRecipient {
+contract OverlayV1FeeDisperser {
     using FixedPoint for uint256;
 
     IOverlayV1Token public immutable ovl; // overlay token

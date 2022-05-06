@@ -42,6 +42,18 @@ def get_position_key(owner: str, id: int) -> HexBytes:
     return web3.solidityKeccak(['address', 'uint256'], [owner, id])
 
 
+def calculate_mid_ratio(entry_price: int, mid_price: int) -> int:
+    """
+    Returns mid ratio from entry price and mid price
+
+    NOTE: mid_ratio is uint48 format and mid, entry prices
+    are int FixedPoint format
+    """
+    # NOTE: mid_ratio "ONE" is 1e14 given uint48
+    mid_ratio = int(Decimal(entry_price) * Decimal(1e14) / Decimal(mid_price))
+    return mid_ratio
+
+
 def position_entry_price(position: Any) -> float:
     """
     Returns the position entry price from an individual position tuple.

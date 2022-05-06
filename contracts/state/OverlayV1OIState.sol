@@ -4,6 +4,7 @@ pragma solidity 0.8.10;
 import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
 import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
+import "@overlay/v1-core/contracts/libraries/Risk.sol";
 import "@overlay/v1-core/contracts/libraries/Roller.sol";
 
 import "../interfaces/state/IOverlayV1OIState.sol";

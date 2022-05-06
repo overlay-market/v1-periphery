@@ -5,6 +5,7 @@ import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
 import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
 import "@overlay/v1-core/contracts/libraries/Position.sol";
+import "@overlay/v1-core/contracts/libraries/Risk.sol";
 
 import "../interfaces/state/IOverlayV1PositionState.sol";
 
@@ -491,7 +492,6 @@ abstract contract OverlayV1PositionState is
         uint256 id
     ) external view returns (uint256 liquidationPrice_) {
         address feed = market.feed();
-        Oracle.Data memory data = _getOracleData(feed);
         Position.Info memory position = _getPosition(market, owner, id);
 
         // get position attributes independent of funding
