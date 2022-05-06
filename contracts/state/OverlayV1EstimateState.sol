@@ -24,7 +24,6 @@ abstract contract OverlayV1EstimateState is
 
     /// @notice Gets the position that would be built on the given market
     /// @notice for the given (collateral, leverage, isLong) attributes
-    // TODO: test
     function _estimatePosition(
         IOverlayV1Market market,
         Oracle.Data memory data,
@@ -114,7 +113,6 @@ abstract contract OverlayV1EstimateState is
 
     /// @notice Gets the estimated position to be built on the Overlay market
     /// @notice for the given (collateral, leverage, isLong) attributes
-    // TODO: test
     function positionEstimate(
         IOverlayV1Market market,
         uint256 collateral,
@@ -129,7 +127,6 @@ abstract contract OverlayV1EstimateState is
     /// @notice Gets the estimated debt of the position to be built
     /// @notice on the Overlay market for the given (collateral, leverage,
     /// @notice isLong) attributes
-    // TODO: test
     function debtEstimate(
         IOverlayV1Market market,
         uint256 collateral,
@@ -151,7 +148,6 @@ abstract contract OverlayV1EstimateState is
     /// @notice Gets the estimated cost of the position to be built
     /// @notice on the Overlay market for the given (collateral, leverage,
     /// @notice isLong) attributes
-    // TODO: test
     function costEstimate(
         IOverlayV1Market market,
         uint256 collateral,
@@ -173,7 +169,6 @@ abstract contract OverlayV1EstimateState is
     /// @notice Gets the estimated open interest of the position to be built
     /// @notice on the Overlay market for the given (collateral, leverage,
     /// @notice isLong) attributes
-    // TODO: test
     function oiEstimate(
         IOverlayV1Market market,
         uint256 collateral,
@@ -195,7 +190,6 @@ abstract contract OverlayV1EstimateState is
     /// @notice Gets the estimated maintenance margin of the position to be built
     /// @notice on the Overlay market for the given (collateral, leverage, isLong)
     /// @notice attributes
-    // TODO: test
     function maintenanceMarginEstimate(
         IOverlayV1Market market,
         uint256 collateral,
