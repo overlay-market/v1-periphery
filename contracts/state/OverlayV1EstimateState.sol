@@ -123,13 +123,7 @@ abstract contract OverlayV1EstimateState is
     ) external view returns (Position.Info memory position_) {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
-        position_ = _estimatePosition(
-            market,
-            data,
-            collateral,
-            leverage,
-            isLong
-        );
+        position_ = _estimatePosition(market, data, collateral, leverage, isLong);
     }
 
     /// @notice Gets the estimated debt of the position to be built
