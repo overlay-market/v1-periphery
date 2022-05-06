@@ -46,8 +46,8 @@ abstract contract OverlayV1EstimateState is
         position_ = Position.Info({
             notional: uint96(notional),
             debt: uint96(debt),
-            isLong: isLong,
             entryToMidRatio: Position.calcEntryToMidRatio(price, midPrice),
+            isLong: isLong,
             liquidated: false,
             oiShares: oi
         });
@@ -110,6 +110,26 @@ abstract contract OverlayV1EstimateState is
             .subFloor(maintenanceMargin.divUp(FixedPoint.ONE - liquidationFeeRate))
             .divUp(oi);
         liquidationPrice_ = position.isLong ? entryPrice.subFloor(dp) : entryPrice + dp;
+    }
+
+    /// @notice Gets the estimated position to be built on the Overlay market
+    /// @notice for the given (collateral, leverage, isLong) attributes
+    // TODO: test
+    function positionEstimate(
+        IOverlayV1Market market,
+        uint256 collateral,
+        uint256 leverage,
+        bool isLong
+    ) external view returns (Position.Info memory position_) {
+        address feed = market.feed();
+        Oracle.Data memory data = _getOracleData(feed);
+        position_ = _estimatePosition(
+            market,
+            data,
+            collateral,
+            leverage,
+            isLong
+        );
     }
 
     /// @notice Gets the estimated debt of the position to be built

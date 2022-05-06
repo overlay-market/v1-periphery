@@ -9,6 +9,14 @@ import "./IOverlayV1OIState.sol";
 import "./IOverlayV1PriceState.sol";
 
 interface IOverlayV1EstimateState is IOverlayV1BaseState, IOverlayV1PriceState, IOverlayV1OIState {
+    // estimated position to be built on the market
+    function positionEstimate(
+        IOverlayV1Market market,
+        uint256 collateral,
+        uint256 leverage,
+        bool isLong
+    ) external view returns (Position.Info memory position_);
+
     // estimated debt of position on the market
     function debtEstimate(
         IOverlayV1Market market,
