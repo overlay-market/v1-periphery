@@ -116,14 +116,25 @@ def staker():
     yield Contract.from_explorer("0xf574E14f28ACb46aF71c42d827CD4Ff389E7723D")
 
 
-@pytest.fixture(scope="module", params=[(2592000, 86400, 31536000)])
-def create_fee_disperser(ovl, staker, rando, request):
-    min_replenish_duration, incentive_lead, incentive_duration = request.param
+@pytest.fixture(scope="module", params=[
+    (2592000, 86400, 31536000, 0)
+])
+def create_fee_disperser(ovl, staker, rando, gov, burner_role, request):
+    (min_replenish_duration, incentive_lead, incentive_duration,
+     fee_burn_rate) = request.param
 
     def create_fee_disperser(repl_duration=min_replenish_duration,
-                             lead=incentive_lead, duration=incentive_duration):
+                             lead=incentive_lead, duration=incentive_duration,
+                             burn=fee_burn_rate):
+        # deploy disperser
         fee_disperser = rando.deploy(
-            OverlayV1FeeDisperser, ovl, staker, repl_duration, lead, duration)
+            OverlayV1FeeDisperser, ovl, staker, repl_duration, lead,
+            duration, burn)
+
+        # grant fee disperser token burn priveleges
+        ovl.grantRole(burner_role, fee_disperser.address, {"from": gov})
+
+        # return deployed disperser
         return fee_disperser
 
     yield create_fee_disperser

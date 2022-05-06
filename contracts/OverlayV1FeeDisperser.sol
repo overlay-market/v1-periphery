@@ -33,6 +33,9 @@ contract OverlayV1FeeDisperser {
     Incentive[] public incentives;
     uint256 public totalWeight;
 
+    // governance determined fee burn ratio
+    uint256 public feeBurnRate;
+
     // registry of incentive idxs for given (token0, token1, fee) pair
     mapping(address => mapping(address => mapping(uint24 => uint256))) public incentiveIdxs;
 
@@ -49,6 +52,9 @@ contract OverlayV1FeeDisperser {
     event IncentiveAdded(address indexed user, uint256 indexed id, uint256 weight);
     event IncentiveUpdated(address indexed user, uint256 indexed id, uint256 weight);
 
+    // event on fee burn rate update
+    event FeeBurnRateUpdated(address indexed user, uint256 feeBurnRate);
+
     // governor modifier for governance sensitive functions
     modifier onlyGovernor() {
         require(ovl.hasRole(GOVERNOR_ROLE, msg.sender), "OVLV1: !governor");
@@ -60,7 +66,8 @@ contract OverlayV1FeeDisperser {
         IUniswapV3Staker _staker,
         uint256 _minReplenishDuration,
         uint256 _incentiveLeadTime,
-        uint256 _incentiveDuration
+        uint256 _incentiveDuration,
+        uint256 _feeBurnRate
     ) {
         ovl = _ovl;
         staker = _staker;
@@ -78,6 +85,9 @@ contract OverlayV1FeeDisperser {
             "OVLV1: incentiveDuration>max"
         );
         incentiveDuration = _incentiveDuration;
+
+        require(_feeBurnRate <= FixedPoint.ONE, "OVLV1: feeBurnRate>max");
+        feeBurnRate = _feeBurnRate;
 
         // initialize first incentive array entry as empty
         // to save some gas on incentiveIdxs storage
@@ -99,6 +109,12 @@ contract OverlayV1FeeDisperser {
         // total reward to be given out should be current balance of fees
         uint256 totalReward = ovl.balanceOf(address(this));
         require(totalReward > 0, "OVLV1: reward == 0");
+
+        // account for amount of reward to burn
+        // mul down with fraction to avoid burning more than totalReward
+        // TODO: test
+        uint256 burnedReward = totalReward.mulDown(feeBurnRate);
+        totalReward -= burnedReward;
 
         // needed timespan attributes for start and end of new incentives
         uint256 startTime = block.timestamp + incentiveLeadTime;
@@ -125,12 +141,16 @@ contract OverlayV1FeeDisperser {
             }
         }
 
+        // update the last timestamp replenished
+        blockTimestampLast = block.timestamp;
+
         // emit event to track so liquidity miners
         // can stake existing deposits on staker
         emit IncentivesReplenished(msg.sender, rewards, startTime, endTime);
 
-        // update the last timestamp replenished
-        blockTimestampLast = block.timestamp;
+        // burn fraction of fees meant to be burnt
+        // TODO: test
+        ovl.burn(burnedReward);
     }
 
     /// @notice Calculates the reward amount to allocate to the given incentive
@@ -254,5 +274,14 @@ contract OverlayV1FeeDisperser {
 
         // emit event to track incentive updates
         emit IncentiveUpdated(msg.sender, idx, weight);
+    }
+
+    /// @notice Updates the fee burn rate imposed on calls to replenish
+    // TODO: test
+    function updateFeeBurnRate(uint256 _feeBurnRate) external onlyGovernor {
+        require(_feeBurnRate <= FixedPoint.ONE, "OVLV1: feeBurnRate>max");
+
+        // emit event to track burn rate updates
+        emit FeeBurnRateUpdated(msg.sender, _feeBurnRate);
     }
 }
