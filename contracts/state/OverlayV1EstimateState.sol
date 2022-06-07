@@ -6,6 +6,7 @@ import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
 import "@overlay/v1-core/contracts/libraries/Oracle.sol";
 import "@overlay/v1-core/contracts/libraries/Position.sol";
 import "@overlay/v1-core/contracts/libraries/Risk.sol";
+import "@overlay/v1-core/contracts/libraries/Tick.sol";
 
 import "../interfaces/state/IOverlayV1EstimateState.sol";
 
@@ -19,6 +20,7 @@ abstract contract OverlayV1EstimateState is
     OverlayV1PriceState,
     OverlayV1OIState
 {
+    using FixedCast for uint256;
     using FixedPoint for uint256;
     using Position for Position.Info;
 
@@ -37,18 +39,31 @@ abstract contract OverlayV1EstimateState is
         uint256 oi = _oiFromNotional(data, notional);
         uint256 fractionOfCapOi = _fractionOfCapOi(market, data, oi);
 
+        // get the attributes needed to calculate position oiShares:
+        // oiLong/Short, oiLongShares/oiShortShares
+        (uint256 oiLong, uint256 oiShort) = _ois(market);
+        uint256 oiShares = Position.calcOiShares(
+            oi,
+            isLong ? oiLong : oiShort,
+            isLong ? market.oiLongShares() : market.oiShortShares()
+        );
+
         // prices
         uint256 midPrice = _mid(data);
         uint256 price = isLong
             ? _ask(market, data, fractionOfCapOi)
             : _bid(market, data, fractionOfCapOi);
+
+        // TODO: test
         position_ = Position.Info({
-            notional: uint96(notional),
-            debt: uint96(debt),
-            entryToMidRatio: Position.calcEntryToMidRatio(price, midPrice),
+            notionalInitial: uint96(notional),
+            debtInitial: uint96(debt),
+            midTick: Tick.priceToTick(midPrice),
+            entryTick: Tick.priceToTick(price),
             isLong: isLong,
             liquidated: false,
-            oiShares: oi
+            oiShares: uint240(oiShares),
+            fractionRemaining: FixedPoint.ONE.toUint16Fixed()
         });
     }
 
@@ -57,7 +72,7 @@ abstract contract OverlayV1EstimateState is
         uint256 fraction = FixedPoint.ONE;
 
         // debt estimate is simply initial debt of position
-        debt_ = position.debtCurrent(fraction);
+        debt_ = Position.debtInitial(position, fraction);
     }
 
     function _costEstimate(Position.Info memory position) internal view returns (uint256 cost_) {
@@ -84,7 +99,7 @@ abstract contract OverlayV1EstimateState is
         uint256 maintenanceMarginFraction = market.params(
             uint256(Risk.Parameters.MaintenanceMarginFraction)
         );
-        uint256 q = position.notionalInitial(FixedPoint.ONE);
+        uint256 q = Position.notionalInitial(position, FixedPoint.ONE);
         maintenanceMargin_ = q.mulUp(maintenanceMarginFraction);
     }
 
