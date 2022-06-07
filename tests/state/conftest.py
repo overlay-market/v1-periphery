@@ -4,7 +4,7 @@ from brownie import Contract, OverlayV1State, web3
 
 @pytest.fixture(scope="module")
 def ovl_v1_core(pm):
-    return pm("overlay-market/v1-core@1.0.0-beta.2")
+    return pm("overlay-market/v1-core@1.0.0-beta.4")
 
 
 @pytest.fixture(scope="module")
