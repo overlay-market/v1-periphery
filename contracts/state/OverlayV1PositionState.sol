@@ -31,22 +31,26 @@ abstract contract OverlayV1PositionState is
     ) internal view returns (Position.Info memory position_) {
         bytes32 key = keccak256(abi.encodePacked(owner, id));
         (
-            uint96 notional,
-            uint96 debt,
-            uint48 entryToMidRatio,
+            uint96 notionalInitial,
+            uint96 debtInitial,
+            int24 midTick,
+            int24 entryTick,
             bool isLong,
             bool liquidated,
-            uint256 oiShares
+            uint240 oiShares,
+            uint16 fractionRemaining
         ) = market.positions(key);
 
         // assemble the position info struct
         position_ = Position.Info({
-            notional: notional,
-            debt: debt,
-            entryToMidRatio: entryToMidRatio,
+            notionalInitial: notionalInitial,
+            debtInitial: debtInitial,
+            midTick: midTick,
+            entryTick: entryTick,
             isLong: isLong,
             liquidated: liquidated,
-            oiShares: oiShares
+            oiShares: oiShares,
+            fractionRemaining: fractionRemaining
         });
     }
 
@@ -56,7 +60,7 @@ abstract contract OverlayV1PositionState is
         uint256 fraction = FixedPoint.ONE;
 
         // return the debt
-        debt_ = position.debtCurrent(fraction);
+        debt_ = Position.debtInitial(position, fraction);
     }
 
     /// @dev current cost basis of individual position
@@ -101,9 +105,9 @@ abstract contract OverlayV1PositionState is
         uint256 fraction = FixedPoint.ONE;
 
         // get attributes needed to calculate current collateral amount:
-        // notionalInitial, debtCurrent, oiInitial, oiCurrent
-        uint256 q = position.notionalInitial(fraction);
-        uint256 d = position.debtCurrent(fraction);
+        // notionalInitial, debtInitial, oiInitial, oiCurrent
+        uint256 q = Position.notionalInitial(position, fraction);
+        uint256 d = Position.debtInitial(position, fraction);
         uint256 oiInitial = position.oiInitial(fraction);
 
         // calculate oiCurrent from aggregate oi values
@@ -305,7 +309,7 @@ abstract contract OverlayV1PositionState is
         uint256 maintenanceMarginFraction = market.params(
             uint256(Risk.Parameters.MaintenanceMarginFraction)
         );
-        uint256 q = position.notionalInitial(FixedPoint.ONE);
+        uint256 q = Position.notionalInitial(position, FixedPoint.ONE);
         maintenanceMargin_ = q.mulUp(maintenanceMarginFraction);
     }
 

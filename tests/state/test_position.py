@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from .utils import (
     get_position_key,
-    position_entry_price,
+    tick_to_price,
     RiskParameter
 )
 
@@ -62,7 +62,7 @@ def test_debt(state, market, feed, ovl, alice):
     pos_key = get_position_key(alice.address, pos_id)
 
     # check market position debt same as state queried position debt
-    (_, expect_debt, _, _, _, _) = market.positions(pos_key)
+    (_, expect_debt, _, _, _, _, _, _) = market.positions(pos_key)
     actual_debt = state.debt(market, alice.address, pos_id)
 
     assert expect_debt == actual_debt
@@ -88,7 +88,7 @@ def test_cost(state, market, feed, ovl, alice):
     pos_key = get_position_key(alice.address, pos_id)
 
     # check market position debt same as state queried position debt
-    (expect_notional_initial, expect_debt, _, _,
+    (expect_notional_initial, expect_debt, _, _, _, _,
      _, _) = market.positions(pos_key)
     expect_cost = expect_notional_initial - expect_debt
     actual_cost = state.cost(market, alice.address, pos_id)
@@ -116,7 +116,7 @@ def test_oi(state, market, feed, ovl, alice):
     pos_key = get_position_key(alice.address, pos_id)
 
     # check market position oi same as state query oi
-    (_, _, _, _, _, expect_oi_shares) = market.positions(pos_key)
+    (_, _, _, _, _, _, expect_oi_shares, _) = market.positions(pos_key)
     expect_oi_long_shares = market.oiLongShares()
 
     # NOTE: ois() tests in test_oi.py
@@ -166,19 +166,27 @@ def test_collateral(state, market, feed, ovl, alice):
     pos_key = get_position_key(alice.address, pos_id)
 
     # get market position oi
-    (expect_notional_initial, expect_debt, _, _, _,
-     expect_oi_shares) = market.positions(pos_key)
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = market.positions(pos_key)
     expect_oi_long_shares = market.oiLongShares()
 
     # NOTE: ois() tests in test_oi.py
     actual_oi_long, _ = state.ois(market)
+
+    # get the entry and mid prices
+    expect_mid_price = tick_to_price(expect_mid_tick)
+    expect_mid_price = int(expect_mid_price)
+
+    expect_entry_price = tick_to_price(expect_entry_tick)
+    expect_entry_price = int(expect_entry_price)
 
     # calculate the expected collateral amount: Q * (OI(t) / OI(0)) - D
     expect_oi = int(
         Decimal(actual_oi_long) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_long_shares)
     )
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_collateral = int(expect_notional_initial
                             * (expect_oi / expect_oi_initial) - expect_debt)
 
@@ -198,7 +206,8 @@ def test_collateral(state, market, feed, ovl, alice):
         Decimal(actual_oi_long) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_long_shares)
     )
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_collateral = int(expect_notional_initial
                             * (expect_oi / expect_oi_initial) - expect_debt)
 
@@ -229,8 +238,8 @@ def test_value(state, market, feed, ovl, alice, is_long):
 
     # get market position oi
     pos = market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
     expect_oi_tot_shares_on_side = market.oiLongShares() if is_long \
         else market.oiShortShares()
 
@@ -238,17 +247,21 @@ def test_value(state, market, feed, ovl, alice, is_long):
     actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
+    # get the entry and mid prices
+    expect_mid_price = tick_to_price(expect_mid_tick)
+    expect_mid_price = int(expect_mid_price)
+
+    expect_entry_price = tick_to_price(expect_entry_tick)
+    expect_entry_price = int(expect_entry_price)
+
     # calculate the expected value of position
     # V(t) = N(t) +/- OI(t) * [P(t) - P(0)]
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_oi = int(
         Decimal(actual_oi_tot_on_side) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_tot_shares_on_side)
     )
-
-    # get the entry price
-    expect_entry_price = position_entry_price(pos)
-    expect_entry_price = int(expect_entry_price)
 
     # NOTE: fractionOfCapOi tests in test_oi.py
     frac_cap_oi = state.fractionOfCapOi(market, expect_oi)
@@ -294,8 +307,8 @@ def test_notional(state, market, feed, ovl, alice, is_long):
 
     # get market position oi
     pos = market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
     expect_oi_tot_shares_on_side = market.oiLongShares() if is_long \
         else market.oiShortShares()
 
@@ -303,17 +316,21 @@ def test_notional(state, market, feed, ovl, alice, is_long):
     actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
+    # get the entry and mid prices
+    expect_mid_price = tick_to_price(expect_mid_tick)
+    expect_mid_price = int(expect_mid_price)
+
+    expect_entry_price = tick_to_price(expect_entry_tick)
+    expect_entry_price = int(expect_entry_price)
+
     # calculate the expected value of position
     # V(t) = N(t) + D +/- OI(t) * [P(t) - P(0)]
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_oi = int(
         Decimal(actual_oi_tot_on_side) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_tot_shares_on_side)
     )
-
-    # get the entry price
-    expect_entry_price = position_entry_price(pos)
-    expect_entry_price = int(expect_entry_price)
 
     # NOTE: fractionOfCapOi tests in test_oi.py
     frac_cap_oi = state.fractionOfCapOi(market, expect_oi)
@@ -360,8 +377,8 @@ def test_trading_fee(state, market, feed, ovl, alice, is_long):
 
     # get market position oi
     pos = market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
     expect_oi_tot_shares_on_side = market.oiLongShares() if is_long \
         else market.oiShortShares()
 
@@ -369,17 +386,21 @@ def test_trading_fee(state, market, feed, ovl, alice, is_long):
     actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
+    # get the entry and mid prices
+    expect_mid_price = tick_to_price(expect_mid_tick)
+    expect_mid_price = int(expect_mid_price)
+
+    expect_entry_price = tick_to_price(expect_entry_tick)
+    expect_entry_price = int(expect_entry_price)
+
     # calculate the expected value of position
     # V(t) = N(t) + D +/- OI(t) * [P(t) - P(0)]
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_oi = int(
         Decimal(actual_oi_tot_on_side) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_tot_shares_on_side)
     )
-
-    # get the entry price
-    expect_entry_price = position_entry_price(pos)
-    expect_entry_price = int(expect_entry_price)
 
     # NOTE: fractionOfCapOi tests in test_oi.py
     frac_cap_oi = state.fractionOfCapOi(market, expect_oi)
@@ -435,8 +456,8 @@ def test_liquidatable(state, mock_market, mock_feed, ovl, alice, is_long):
 
     # get the market position
     pos = mock_market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
 
     # check not liquidatable
     expect_liquidatable = False
@@ -502,8 +523,8 @@ def test_liquidation_fee(state, mock_market, mock_feed, ovl, alice, is_long):
 
     # get market position oi
     pos = mock_market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
     expect_oi_tot_shares_on_side = mock_market.oiLongShares() if is_long \
         else mock_market.oiShortShares()
 
@@ -511,17 +532,21 @@ def test_liquidation_fee(state, mock_market, mock_feed, ovl, alice, is_long):
     actual_oi_long, actual_oi_short = state.ois(mock_market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
+    # get the entry and mid prices
+    expect_mid_price = tick_to_price(expect_mid_tick)
+    expect_mid_price = int(expect_mid_price)
+
+    expect_entry_price = tick_to_price(expect_entry_tick)
+    expect_entry_price = int(expect_entry_price)
+
     # calculate the expected value of position
     # V(t) = N(t) +/- OI(t) * [P(t) - P(0)]
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_oi = int(
         Decimal(actual_oi_tot_on_side) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_tot_shares_on_side)
     )
-
-    # get the entry price
-    expect_entry_price = position_entry_price(pos)
-    expect_entry_price = int(expect_entry_price)
 
     # mid used for liquidation exit (manipulation resistant)
     # NOTE: mid tests in test_price.py
@@ -570,8 +595,8 @@ def test_maintenance_margin(state, market, feed, ovl, alice):
 
     # get market position oi
     pos = market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
 
     # calculate the expected maintenance margin: MM * Q
     expect_maintenance_margin_fraction = market.params(
@@ -620,8 +645,8 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
 
     # get market position oi
     pos = mock_market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
     expect_oi_tot_shares_on_side = mock_market.oiLongShares() if is_long \
         else mock_market.oiShortShares()
 
@@ -629,17 +654,21 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     actual_oi_long, actual_oi_short = state.ois(mock_market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
+    # get the entry and mid prices
+    expect_mid_price = tick_to_price(expect_mid_tick)
+    expect_mid_price = int(expect_mid_price)
+
+    expect_entry_price = tick_to_price(expect_entry_tick)
+    expect_entry_price = int(expect_entry_price)
+
     # calculate the expected value of position
     # V(t) = N(t) +/- OI(t) * [P(t) - P(0)]
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_oi = int(
         Decimal(actual_oi_tot_on_side) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_tot_shares_on_side)
     )
-
-    # get the entry price
-    expect_entry_price = position_entry_price(pos)
-    expect_entry_price = int(expect_entry_price)
 
     # mid used for liquidation exit (manipulation resistant)
     # NOTE: mid tests in test_price.py
@@ -672,9 +701,7 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
     actual_excess = int(state.marginExcessBeforeLiquidation(
         mock_market, alice.address, pos_id))
-
-    # TODO: why rel tol needed here?
-    assert expect_excess == approx(actual_excess, rel=1e-3)
+    assert expect_excess == approx(actual_excess, rel=1e-4)
 
     # repeat the same when excess < 0
     # set price to just beyond liquidation price
@@ -715,9 +742,7 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
     actual_excess = int(state.marginExcessBeforeLiquidation(
         mock_market, alice.address, pos_id))
-
-    # TODO: why rel tol needed here?
-    assert expect_excess == approx(actual_excess, rel=1e-3)
+    assert expect_excess == approx(actual_excess, rel=1e-4)
 
 
 @given(is_long=strategy('bool'))
@@ -742,8 +767,8 @@ def test_liquidation_price(state, market, feed, ovl, alice, is_long):
 
     # get market position oi
     pos = market.positions(pos_key)
-    (expect_notional_initial, expect_debt, expect_mid_ratio, _, _,
-     expect_oi_shares) = pos
+    (expect_notional_initial, expect_debt, expect_mid_tick, expect_entry_tick,
+     _, _, expect_oi_shares, _) = pos
     expect_oi_tot_shares_on_side = market.oiLongShares() if is_long \
         else market.oiShortShares()
 
@@ -751,17 +776,21 @@ def test_liquidation_price(state, market, feed, ovl, alice, is_long):
     actual_oi_long, actual_oi_short = state.ois(market)
     actual_oi_tot_on_side = actual_oi_long if is_long else actual_oi_short
 
+    # get the entry and mid prices
+    expect_mid_price = tick_to_price(expect_mid_tick)
+    expect_mid_price = int(expect_mid_price)
+
+    expect_entry_price = tick_to_price(expect_entry_tick)
+    expect_entry_price = int(expect_entry_price)
+
     # calculate the expected value of position
     # V(t) = N(t) + D +/- OI(t) * [P(t) - P(0)]
-    expect_oi_initial = expect_oi_shares
+    expect_oi_initial = Decimal(
+        expect_notional_initial) * Decimal(1e18) / Decimal(expect_mid_price)
     expect_oi = int(
         Decimal(actual_oi_tot_on_side) * Decimal(expect_oi_shares)
         / Decimal(expect_oi_tot_shares_on_side)
     )
-
-    # get the entry price
-    expect_entry_price = position_entry_price(pos)
-    expect_entry_price = int(expect_entry_price)
 
     # calculate the collateral backing the position
     expect_collateral = Decimal(expect_notional_initial

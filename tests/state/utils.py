@@ -2,6 +2,7 @@ from brownie import web3
 from decimal import Decimal
 from enum import Enum
 from hexbytes import HexBytes
+from math import log
 from typing import Any
 
 
@@ -42,28 +43,20 @@ def get_position_key(owner: str, id: int) -> HexBytes:
     return web3.solidityKeccak(['address', 'uint256'], [owner, id])
 
 
-def calculate_mid_ratio(entry_price: int, mid_price: int) -> int:
+def tick_to_price(tick: int) -> int:
     """
-    Returns mid ratio from entry price and mid price
-
-    NOTE: mid_ratio is uint48 format and mid, entry prices
-    are int FixedPoint format
+    Returns the price associated with a given tick
+    price = 1.0001 ** tick
     """
-    # NOTE: mid_ratio "ONE" is 1e14 given uint48
-    mid_ratio = int(Decimal(entry_price) * Decimal(1e14) / Decimal(mid_price))
-    return mid_ratio
+    return int((Decimal(1.0001) ** Decimal(tick)) * Decimal(1e18))
 
 
-def position_entry_price(position: Any) -> float:
+def price_to_tick(price: int) -> int:
     """
-    Returns the position entry price from an individual position tuple.
-
-    entry = ratio * mid = ratio * (notional / oi)
+    Returns the tick associated with a given price
+    price = 1.0001 ** tick
     """
-    (notional, debt, ratio, is_long, liquidated, oi_shares) = position
-    ratio_fixed_point = Decimal(ratio) * Decimal(1e4)
-    entry = float(ratio_fixed_point * Decimal(notional) / Decimal(oi_shares))
-    return entry
+    return int(log(Decimal(price) / Decimal(1e18)) / log(Decimal(1.0001)))
 
 
 def transform_snapshot(snapshot: Any, timestamp: int, window: int,

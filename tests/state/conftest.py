@@ -4,7 +4,7 @@ from brownie import Contract, OverlayV1State, web3
 
 @pytest.fixture(scope="module")
 def ovl_v1_core(pm):
-    return pm("overlay-market/v1-core@1.0.0-beta.2")
+    return pm("overlay-market/v1-core@1.0.0-beta.4")
 
 
 @pytest.fixture(scope="module")
@@ -32,21 +32,6 @@ def fee_recipient(accounts):
     yield accounts[4]
 
 
-@pytest.fixture(scope="module", params=[8000000])
-def create_token(ovl_v1_core, gov, alice, bob, request):
-    sup = request.param
-
-    def create_token(supply=sup):
-        ovl = ovl_v1_core.OverlayV1Token
-        tok = gov.deploy(ovl)
-        tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
-        tok.transfer(alice, (supply/2) * 10 ** tok.decimals(), {"from": gov})
-        tok.transfer(bob, (supply/2) * 10 ** tok.decimals(), {"from": gov})
-        return tok
-
-    yield create_token
-
-
 @pytest.fixture(scope="module")
 def minter_role():
     yield web3.solidityKeccak(['string'], ["MINTER"])
@@ -60,6 +45,26 @@ def burner_role():
 @pytest.fixture(scope="module")
 def governor_role():
     yield web3.solidityKeccak(['string'], ["GOVERNOR"])
+
+
+@pytest.fixture(scope="module", params=[8000000])
+def create_token(ovl_v1_core, gov, alice, bob, minter_role, request):
+    sup = request.param
+
+    def create_token(supply=sup):
+        ovl = ovl_v1_core.OverlayV1Token
+        tok = gov.deploy(ovl)
+
+        # mint the token then renounce minter role
+        tok.grantRole(minter_role, gov, {"from": gov})
+        tok.mint(gov, supply * 10 ** tok.decimals(), {"from": gov})
+        tok.renounceRole(minter_role, gov, {"from": gov})
+
+        tok.transfer(alice, (supply/2) * 10 ** tok.decimals(), {"from": gov})
+        tok.transfer(bob, (supply/2) * 10 ** tok.decimals(), {"from": gov})
+        return tok
+
+    yield create_token
 
 
 @pytest.fixture(scope="module")

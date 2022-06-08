@@ -2,7 +2,7 @@ from pytest import approx
 from brownie.test import given, strategy
 from decimal import Decimal
 
-from .utils import calculate_mid_ratio, RiskParameter
+from .utils import price_to_tick, RiskParameter
 
 
 @given(
@@ -21,9 +21,18 @@ def test_position_estimate(state, market, feed, alice, ovl, leverage, is_long):
     # NOTE: state.mid() tested in test_price.py
     mid_price = state.mid(market)
 
-    # calculate the oi
+    # oi total and oi total shares on side
+    # NOTE: state.ois() tested in test_oi.py
+    oi_long, oi_short = state.ois(market)
+    oi_total = oi_long if is_long else oi_short
+    oi_total_shares = market.oiLongShares() \
+        if is_long else market.oiShortShares()
+
+    # calculate the oi and oi shares
     # NOTE: state.fractionOfCapOi() tested in test_oi.py
     oi = int(Decimal(notional) * Decimal(1e18) / Decimal(mid_price))
+    oi_shares = int(Decimal(oi) * Decimal(oi_total_shares)
+                    / Decimal(oi_total)) if oi_total > 0 else oi
     fraction_oi = state.fractionOfCapOi(market, oi)
 
     # get the entry price
@@ -35,13 +44,16 @@ def test_position_estimate(state, market, feed, alice, ovl, leverage, is_long):
     expect_notional = notional
     expect_debt = expect_notional - collateral
     expect_is_long = is_long
-    expect_mid_ratio = calculate_mid_ratio(entry_price, mid_price)
+    expect_mid_tick = price_to_tick(mid_price)
+    expect_entry_tick = price_to_tick(entry_price)
     expect_liquidated = False
-    expect_oi_shares = oi
+    expect_oi_shares = oi_shares
+    expect_fraction_remaining = 10000
 
     # check market position is same as position returned from state
-    expect = (expect_notional, expect_debt, expect_mid_ratio, expect_is_long,
-              expect_liquidated, expect_oi_shares)
+    expect = (expect_notional, expect_debt, expect_mid_tick, expect_entry_tick,
+              expect_is_long, expect_liquidated, expect_oi_shares,
+              expect_fraction_remaining)
     actual = state.positionEstimate(market, collateral, leverage, is_long)
     assert expect == actual
 
@@ -93,13 +105,13 @@ def test_oi_estimate(state, market, feed, alice, ovl, is_long):
     mid_price = state.mid(market)
 
     # calculate the oi
-    # NOTE: state.fractionOfCapOi() tested in test_oi.py
     oi = int(Decimal(notional) * Decimal(1e18) / Decimal(mid_price))
 
     # check position's oi is same as position returned from state
+    # NOTE: rel 1e-4 given tick precision to 1bps
     expect = oi
     actual = state.oiEstimate(market, collateral, leverage, is_long)
-    assert expect == actual
+    assert expect == approx(actual, rel=1e-4)
 
 
 @given(is_long=strategy('bool'))
@@ -166,7 +178,8 @@ def test_liquidation_price_estimate(state, market, feed, alice, ovl, is_long):
         if is_long else entry_price + dp
 
     # check position's maintenance is same as position returned from state
+    # NOTE: rel 1e-4 given tick precision to 1bps
     expect = int(expect_liquidation_price)
     actual = int(state.liquidationPriceEstimate(
         market, collateral, leverage, is_long))
-    assert expect == approx(actual)
+    assert expect == approx(actual, rel=1e-4)
