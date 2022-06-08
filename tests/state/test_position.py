@@ -701,9 +701,7 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
     actual_excess = int(state.marginExcessBeforeLiquidation(
         mock_market, alice.address, pos_id))
-
-    # TODO: why rel tol needed here?
-    assert expect_excess == approx(actual_excess, rel=1e-3)
+    assert expect_excess == approx(actual_excess, rel=1e-4)
 
     # repeat the same when excess < 0
     # set price to just beyond liquidation price
@@ -744,9 +742,7 @@ def test_margin_excess_before_liquidation(state, mock_market, mock_feed,
     expect_excess = expect_value - expect_maintenance_margin - expect_liq_fee
     actual_excess = int(state.marginExcessBeforeLiquidation(
         mock_market, alice.address, pos_id))
-
-    # TODO: why rel tol needed here?
-    assert expect_excess == approx(actual_excess, rel=1e-3)
+    assert expect_excess == approx(actual_excess, rel=1e-4)
 
 
 @given(is_long=strategy('bool'))
