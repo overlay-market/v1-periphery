@@ -292,7 +292,7 @@ def test_circuit_breaker_level(state, feed, ovl, market,
 
     # check circuit breaker level matches expect
     one = 1000000000000000000
-    expect = int(market.capNotionalAdjustedForCircuitBreaker(one))
+    expect = int(market.capOiAdjustedForCircuitBreaker(one))
     actual = int(state.circuitBreakerLevel(market))
     assert expect == approx(actual)
 
