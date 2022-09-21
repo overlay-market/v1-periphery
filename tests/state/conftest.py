@@ -106,7 +106,7 @@ def pool_uniweth_30bps():
     yield Contract.from_explorer("0x1d42064Fc4Beb5F8aAF85F4617AE8b3b5B8Bd801")
 
 
-@pytest.fixture(scope="module", params=[(600, 3600, 300, 14)])
+@pytest.fixture(scope="module", params=[(600, 1800, 300, 12)])
 def create_feed_factory(ovl_v1_core, uni_factory, gov, weth, uni, request):
     micro, macro, cardinality, block_time = request.param
     tok = uni.address
@@ -164,7 +164,7 @@ def feed(create_feed):
     yield create_feed()
 
 
-@pytest.fixture(scope="module", params=[(600, 3600)])
+@pytest.fixture(scope="module", params=[(600, 1800)])
 def create_mock_feed_factory(ovl_v1_core, gov, request):
     micro, macro = request.param
 
