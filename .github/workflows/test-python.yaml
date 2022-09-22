@@ -58,10 +58,10 @@ jobs:
 
       - name: Create env file for Brownie pm
         run: |
-          touch ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.4/.env
-          echo WEB3_INFURA_PROJECT_ID=${{ secrets.WEB3_INFURA_PROJECT_ID }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.4/.env
-          echo ETHERSCAN_TOKEN=${{ secrets.ETHERSCAN_TOKEN }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.4/.env
-          cat ~/.brownie/packages/overlay-market/v1-core@1.0.0-beta.4/.env
+          touch ~/.brownie/packages/overlay-market/v1-core@1.0.0-rc.0/.env
+          echo WEB3_INFURA_PROJECT_ID=${{ secrets.WEB3_INFURA_PROJECT_ID }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-rc.0/.env
+          echo ETHERSCAN_TOKEN=${{ secrets.ETHERSCAN_TOKEN }} >> ~/.brownie/packages/overlay-market/v1-core@1.0.0-rc.0/.env
+          cat ~/.brownie/packages/overlay-market/v1-core@1.0.0-rc.0/.env
 
       - name: Run Tests
         run: brownie test -vv -s --gas

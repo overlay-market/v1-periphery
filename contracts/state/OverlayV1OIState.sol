@@ -125,7 +125,7 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
     {
         // set cap to ONE as reporting level in terms of % of capOi
         // = market.capNotionalAdjustedForCircuitBreaker(cap) / cap
-        circuitBreakerLevel_ = market.capNotionalAdjustedForCircuitBreaker(FixedPoint.ONE);
+        circuitBreakerLevel_ = market.capOiAdjustedForCircuitBreaker(FixedPoint.ONE);
     }
 
     /// @notice Gets the current open interest values on the Overlay market

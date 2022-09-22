@@ -45,7 +45,7 @@ def test_feed_fixture(feed, pool_daiweth_30bps, pool_uniweth_30bps, dai, weth,
     assert feed.marketBaseToken() == weth
     assert feed.marketQuoteToken() == dai
     assert feed.microWindow() == 600
-    assert feed.macroWindow() == 3600
+    assert feed.macroWindow() == 1800
 
     assert feed_factory.isFeed(feed) is True
 
@@ -54,7 +54,7 @@ def test_mock_feed_fixture(mock_feed, mock_feed_factory):
     assert mock_feed.price() == 1000000000000000000
     assert mock_feed.reserve() == 2000000000000000000000000
     assert mock_feed.microWindow() == 600
-    assert mock_feed.macroWindow() == 3600
+    assert mock_feed.macroWindow() == 1800
 
 
 def test_market_fixture(market, feed, ovl, factory, gov,

@@ -5,13 +5,10 @@ networks:
 # automatically fetch contract sources from Etherscan
 autofetch_sources: True
 
-# automatically load the local .env file
-dotenv: .env
-
 # require OpenZepplin, Uniswap Contracts
 dependencies:
   - OpenZeppelin/openzeppelin-contracts@4.5.0
-  - overlay-market/v1-core@1.0.0-beta.4
+  - overlay-market/v1-core@1.0.0-rc.0
   - Uniswap/v3-core@1.0.0
   - Uniswap/v3-periphery@1.0.0
 
@@ -23,6 +20,6 @@ compiler:
       runs: 800
     remappings:
       - "@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.5.0"
-      - "@overlay/v1-core=overlay-market/v1-core@1.0.0-beta.4"
+      - "@overlay/v1-core=overlay-market/v1-core@1.0.0-rc.0"
       - "@uniswap/v3-core=Uniswap/v3-core@1.0.0"
       - "@uniswap/v3-periphery=Uniswap/v3-periphery@1.0.0"
