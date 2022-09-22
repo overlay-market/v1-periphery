@@ -54,7 +54,6 @@ abstract contract OverlayV1EstimateState is
             ? _ask(market, data, fractionOfCapOi)
             : _bid(market, data, fractionOfCapOi);
 
-        // TODO: test
         position_ = Position.Info({
             notionalInitial: uint96(notional),
             debtInitial: uint96(debt),
