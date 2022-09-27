@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
-import "@overlay/v1-core/contracts/interfaces/IOverlayV1Token.sol";
-import "@overlay/v1-core/contracts/libraries/FixedPoint.sol";
+import "@overlay-protocol/v1-core/contracts/interfaces/IOverlayV1Token.sol";
+import "@overlay-protocol/v1-core/contracts/libraries/FixedPoint.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IERC20Minimal.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
