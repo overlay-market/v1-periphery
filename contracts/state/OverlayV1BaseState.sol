@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
-import "@overlay/v1-core/contracts/interfaces/IOverlayV1Factory.sol";
-import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
-import "@overlay/v1-core/contracts/interfaces/feeds/IOverlayV1Feed.sol";
+import "@overlay-protocol/v1-core/contracts/interfaces/IOverlayV1Factory.sol";
+import "@overlay-protocol/v1-core/contracts/interfaces/IOverlayV1Market.sol";
+import "@overlay-protocol/v1-core/contracts/interfaces/feeds/IOverlayV1Feed.sol";
 
-import "@overlay/v1-core/contracts/libraries/Oracle.sol";
+import "@overlay-protocol/v1-core/contracts/libraries/Oracle.sol";
 
 import "../interfaces/state/IOverlayV1BaseState.sol";
 
