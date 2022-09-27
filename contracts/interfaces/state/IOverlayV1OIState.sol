@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.10;
 
-import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
+import "@overlay-protocol/v1-core/contracts/interfaces/IOverlayV1Market.sol";
 
 import "./IOverlayV1BaseState.sol";
 import "./IOverlayV1PriceState.sol";

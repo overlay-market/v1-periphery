@@ -3,9 +3,9 @@ pragma solidity 0.8.10;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-import "@overlay/v1-core/contracts/interfaces/IOverlayV1Market.sol";
-import "@overlay/v1-core/contracts/libraries/Oracle.sol";
-import "@overlay/v1-core/contracts/libraries/Roller.sol";
+import "@overlay-protocol/v1-core/contracts/interfaces/IOverlayV1Market.sol";
+import "@overlay-protocol/v1-core/contracts/libraries/Oracle.sol";
+import "@overlay-protocol/v1-core/contracts/libraries/Roller.sol";
 
 import "../interfaces/state/IOverlayV1PriceState.sol";
 
