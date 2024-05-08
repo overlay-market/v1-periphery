@@ -1,4 +1,4 @@
-[default]
+[profile.default]
 src = 'contracts'
 script = 'scripts'
 out = 'build'
@@ -6,7 +6,7 @@ tst = 'tests'
 libs = ['lib']
 
 remappings = [ 
-  "@overlay/v1-core/=lib/v1-core/",
+  "@overlay-protocol/v1-core/=lib/v1-core/",
   "@openzeppelin/=lib/openzeppelin-contracts/",
   "@uniswap/v3-core/=lib/v3-core/",
   "@uniswap/v3-periphery=lib/v3-periphery"
