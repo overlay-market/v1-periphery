@@ -44,7 +44,8 @@ def test_staker_fixture(staker, uni_factory, pos_manager):
     staker.maxIncentiveDuration() == 63072000
 
 
-def test_fee_disperser_fixture(fee_disperser, ovl, staker):
+def test_fee_disperser_fixture(fee_disperser, ovl, staker, minter_role,
+                               burner_role):
     fee_disperser.ovl() == ovl
     fee_disperser.staker() == staker
 
@@ -52,6 +53,7 @@ def test_fee_disperser_fixture(fee_disperser, ovl, staker):
     fee_disperser.minReplenishDuration() == 2592000
     fee_disperser.incentiveLeadTime() == 86400
     fee_disperser.incentiveDuration() == 31536000
+    fee_disperser.feeBurnRate() == 0
 
     # storage vars
     fee_disperser.blockTimestampLast() == 0
@@ -66,3 +68,7 @@ def test_fee_disperser_fixture(fee_disperser, ovl, staker):
     # check only one element has been added to incentives
     with reverts():
         fee_disperser.incentives(1)
+
+    # check has burner role on OVL token
+    ovl.hasRole(burner_role, fee_disperser.address) is True
+    ovl.hasRole(minter_role, fee_disperser.address) is False
