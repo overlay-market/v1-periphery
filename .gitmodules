@@ -4,6 +4,7 @@
 [submodule "lib/v1-core"]
 	path = lib/v1-core
 	url = https://github.com/overlay-market/v1-core
+	branch = feat/PoL
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/openzeppelin/openzeppelin-contracts
