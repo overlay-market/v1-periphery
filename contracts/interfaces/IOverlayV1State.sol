@@ -7,11 +7,13 @@ import "./state/IOverlayV1BaseState.sol";
 import "./state/IOverlayV1PriceState.sol";
 import "./state/IOverlayV1OIState.sol";
 import "./state/IOverlayV1PositionState.sol";
+import "./state/IOverlayV1EstimateState.sol";
 
 interface IOverlayV1State is
     IOverlayV1BaseState,
     IOverlayV1PriceState,
     IOverlayV1OIState,
+    IOverlayV1EstimateState,
     IOverlayV1PositionState
 {
     struct MarketState {
