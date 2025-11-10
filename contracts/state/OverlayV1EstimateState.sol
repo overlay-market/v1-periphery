@@ -67,7 +67,7 @@ abstract contract OverlayV1EstimateState is
         });
     }
 
-    function _debtEstimate(Position.Info memory position) internal view returns (uint256 debt_) {
+    function _debtEstimate(Position.Info memory position) internal pure returns (uint256 debt_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
 
@@ -75,7 +75,7 @@ abstract contract OverlayV1EstimateState is
         debt_ = Position.debtInitial(position, fraction);
     }
 
-    function _costEstimate(Position.Info memory position) internal view returns (uint256 cost_) {
+    function _costEstimate(Position.Info memory position) internal pure returns (uint256 cost_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
 
@@ -83,7 +83,7 @@ abstract contract OverlayV1EstimateState is
         cost_ = position.cost(fraction);
     }
 
-    function _oiEstimate(Position.Info memory position) internal view returns (uint256 oi_) {
+    function _oiEstimate(Position.Info memory position) internal pure returns (uint256 oi_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
 

@@ -38,7 +38,7 @@ abstract contract OverlayV1PriceState is IOverlayV1PriceState, OverlayV1BaseStat
         ask_ = market.ask(data, volume);
     }
 
-    function _mid(Oracle.Data memory data) internal view returns (uint256 mid_) {
+    function _mid(Oracle.Data memory data) internal pure returns (uint256 mid_) {
         mid_ = Math.average(data.priceOverMicroWindow, data.priceOverMacroWindow);
     }
 

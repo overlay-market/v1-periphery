@@ -22,7 +22,7 @@ abstract contract OverlayV1OIState is IOverlayV1OIState, OverlayV1BaseState, Ove
     /// @dev Q = N * L; where N = collateral, L = leverage
     function _oiFromNotional(Oracle.Data memory data, uint256 notional)
         internal
-        view
+        pure
         returns (uint256 oi_)
     {
         uint256 midPrice = _mid(data);

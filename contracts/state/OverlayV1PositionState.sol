@@ -55,25 +55,25 @@ abstract contract OverlayV1PositionState is
     }
 
     /// @dev current debt owed by individual position
-    function _debt(Position.Info memory position) internal view returns (uint256 debt_) {
+    function _debt(Position.Info memory _position) internal pure returns (uint256 debt_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
 
         // return the debt
-        debt_ = Position.debtInitial(position, fraction);
+        debt_ = Position.debtInitial(_position, fraction);
     }
 
     /// @dev current cost basis of individual position
-    function _cost(Position.Info memory position) internal view returns (uint256 cost_) {
+    function _cost(Position.Info memory _position) internal pure returns (uint256 cost_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
 
         // return the cost
-        cost_ = position.cost(fraction);
+        cost_ = _position.cost(fraction);
     }
 
     /// @dev current oi occupied by individual position
-    function _oi(IOverlayV1Market market, Position.Info memory position)
+    function _oi(IOverlayV1Market market, Position.Info memory _position)
         internal
         view
         returns (uint256 oi_)
@@ -86,17 +86,17 @@ abstract contract OverlayV1PositionState is
         (uint256 oiLong, uint256 oiShort) = _ois(market);
 
         // aggregate oi values on market
-        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong
+        uint256 oiTotalOnSide = _position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = _position.isLong
             ? market.oiLongShares()
             : market.oiShortShares();
 
         // return the current oi
-        oi_ = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+        oi_ = _position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
     }
 
     /// @dev current collateral backing the individual position
-    function _collateral(IOverlayV1Market market, Position.Info memory position)
+    function _collateral(IOverlayV1Market market, Position.Info memory _position)
         internal
         view
         returns (uint256 collateral_)
@@ -106,21 +106,21 @@ abstract contract OverlayV1PositionState is
 
         // get attributes needed to calculate current collateral amount:
         // notionalInitial, debtInitial, oiInitial, oiCurrent
-        uint256 q = Position.notionalInitial(position, fraction);
-        uint256 d = Position.debtInitial(position, fraction);
-        uint256 oiInitial = position.oiInitial(fraction);
+        uint256 q = Position.notionalInitial(_position, fraction);
+        uint256 d = Position.debtInitial(_position, fraction);
+        uint256 oiInitial = _position.oiInitial(fraction);
 
         // calculate oiCurrent from aggregate oi values
         (uint256 oiLong, uint256 oiShort) = _ois(market);
 
         // aggregate oi values on market
-        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong
+        uint256 oiTotalOnSide = _position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = _position.isLong
             ? market.oiLongShares()
             : market.oiShortShares();
 
         // position's current oi factoring in funding
-        uint256 oiCurrent = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+        uint256 oiCurrent = _position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
 
         // return the collateral
         collateral_ = q.mulUp(oiCurrent).divUp(oiInitial).subFloor(d);
@@ -130,7 +130,7 @@ abstract contract OverlayV1PositionState is
     function _value(
         IOverlayV1Market market,
         Oracle.Data memory data,
-        Position.Info memory position
+        Position.Info memory _position
     ) internal view returns (uint256 value_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
@@ -140,25 +140,25 @@ abstract contract OverlayV1PositionState is
         (uint256 oiLong, uint256 oiShort) = _ois(market);
 
         // aggregate oi values on market
-        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong
+        uint256 oiTotalOnSide = _position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = _position.isLong
             ? market.oiLongShares()
             : market.oiShortShares();
 
         // position's current oi factoring in funding
-        uint256 oi = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+        uint256 oi_ = _position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
 
         // current price is price position would receive if unwound
         // longs get the bid on unwind, shorts get the ask
-        uint256 currentPrice = position.isLong
-            ? _bid(market, data, _fractionOfCapOi(market, data, oi))
-            : _ask(market, data, _fractionOfCapOi(market, data, oi));
+        uint256 currentPrice = _position.isLong
+            ? _bid(market, data, _fractionOfCapOi(market, data, oi_))
+            : _ask(market, data, _fractionOfCapOi(market, data, oi_));
 
         // get cap payoff from risk params
         uint256 capPayoff = market.params(uint256(Risk.Parameters.CapPayoff));
 
         // return current value
-        value_ = position.value(
+        value_ = _position.value(
             fraction,
             oiTotalOnSide,
             oiTotalSharesOnSide,
@@ -171,7 +171,7 @@ abstract contract OverlayV1PositionState is
     function _notional(
         IOverlayV1Market market,
         Oracle.Data memory data,
-        Position.Info memory position
+        Position.Info memory _position
     ) internal view returns (uint256 notional_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
@@ -181,25 +181,25 @@ abstract contract OverlayV1PositionState is
         (uint256 oiLong, uint256 oiShort) = _ois(market);
 
         // aggregate oi values on market
-        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong
+        uint256 oiTotalOnSide = _position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = _position.isLong
             ? market.oiLongShares()
             : market.oiShortShares();
 
         // position's current oi factoring in funding
-        uint256 oi = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
+        uint256 oi_ = _position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
 
         // current price is price position would receive if unwound
         // longs get the bid on unwind, shorts get the ask
-        uint256 currentPrice = position.isLong
-            ? _bid(market, data, _fractionOfCapOi(market, data, oi))
-            : _ask(market, data, _fractionOfCapOi(market, data, oi));
+        uint256 currentPrice = _position.isLong
+            ? _bid(market, data, _fractionOfCapOi(market, data, oi_))
+            : _ask(market, data, _fractionOfCapOi(market, data, oi_));
 
         // get cap payoff from risk params
         uint256 capPayoff = market.params(uint256(Risk.Parameters.CapPayoff));
 
         // return current notional with PnL
-        notional_ = position.notionalWithPnl(
+        notional_ = _position.notionalWithPnl(
             fraction,
             oiTotalOnSide,
             oiTotalSharesOnSide,
@@ -215,7 +215,7 @@ abstract contract OverlayV1PositionState is
     function _valueForLiquidations(
         IOverlayV1Market market,
         Oracle.Data memory data,
-        Position.Info memory position
+        Position.Info memory _position
     ) internal view returns (uint256 value_) {
         // assume entire position value such that fraction = ONE
         uint256 fraction = FixedPoint.ONE;
@@ -225,13 +225,10 @@ abstract contract OverlayV1PositionState is
         (uint256 oiLong, uint256 oiShort) = _ois(market);
 
         // aggregate oi values on market
-        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong
+        uint256 oiTotalOnSide = _position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = _position.isLong
             ? market.oiLongShares()
             : market.oiShortShares();
-
-        // position's current oi factoring in funding
-        uint256 oi = position.oiCurrent(fraction, oiTotalOnSide, oiTotalSharesOnSide);
 
         // current price is the price position receives upon liquidation
         // which is the mid price (manipulation resistant)
@@ -241,7 +238,7 @@ abstract contract OverlayV1PositionState is
         uint256 capPayoff = market.params(uint256(Risk.Parameters.CapPayoff));
 
         // return current value
-        value_ = position.value(
+        value_ = _position.value(
             fraction,
             oiTotalOnSide,
             oiTotalSharesOnSide,
@@ -254,15 +251,15 @@ abstract contract OverlayV1PositionState is
     function _liquidatable(
         IOverlayV1Market market,
         Oracle.Data memory data,
-        Position.Info memory position
+        Position.Info memory _position
     ) internal view returns (bool liquidatable_) {
         // get the attributes needed to calculate position notional:
         // oiLong/Short, oiLongShares/oiShortShares, price, capPayoff
         (uint256 oiLong, uint256 oiShort) = _ois(market);
 
         // aggregate oi values on market
-        uint256 oiTotalOnSide = position.isLong ? oiLong : oiShort;
-        uint256 oiTotalSharesOnSide = position.isLong
+        uint256 oiTotalOnSide = _position.isLong ? oiLong : oiShort;
+        uint256 oiTotalSharesOnSide = _position.isLong
             ? market.oiLongShares()
             : market.oiShortShares();
 
@@ -274,7 +271,7 @@ abstract contract OverlayV1PositionState is
         uint256 liquidationFeeRate = market.params(uint256(Risk.Parameters.LiquidationFeeRate));
 
         // get whether liquidatable
-        liquidatable_ = position.liquidatable(
+        liquidatable_ = _position.liquidatable(
             oiTotalOnSide,
             oiTotalSharesOnSide,
             currentPrice,
@@ -288,20 +285,20 @@ abstract contract OverlayV1PositionState is
     function _liquidationFee(
         IOverlayV1Market market,
         Oracle.Data memory data,
-        Position.Info memory position
+        Position.Info memory _position
     ) internal view returns (uint256 liquidationFee_) {
-        bool liquidatable = _liquidatable(market, data, position);
-        if (liquidatable) {
+        bool liquidatable_ = _liquidatable(market, data, _position);
+        if (liquidatable_) {
             uint256 liquidationFeeRate = market.params(
                 uint256(Risk.Parameters.LiquidationFeeRate)
             );
-            uint256 value = _valueForLiquidations(market, data, position);
-            liquidationFee_ = value.mulDown(liquidationFeeRate);
+            uint256 value_ = _valueForLiquidations(market, data, _position);
+            liquidationFee_ = value_.mulDown(liquidationFeeRate);
         }
     }
 
     /// @dev maintenance margin required to keep position open
-    function _maintenanceMargin(IOverlayV1Market market, Position.Info memory position)
+    function _maintenanceMargin(IOverlayV1Market market, Position.Info memory _position)
         internal
         view
         returns (uint256 maintenanceMargin_)
@@ -309,7 +306,7 @@ abstract contract OverlayV1PositionState is
         uint256 maintenanceMarginFraction = market.params(
             uint256(Risk.Parameters.MaintenanceMarginFraction)
         );
-        uint256 q = Position.notionalInitial(position, FixedPoint.ONE);
+        uint256 q = Position.notionalInitial(_position, FixedPoint.ONE);
         maintenanceMargin_ = q.mulUp(maintenanceMarginFraction);
     }
 
@@ -331,8 +328,8 @@ abstract contract OverlayV1PositionState is
         address owner,
         uint256 id
     ) external view returns (uint256 debt_) {
-        Position.Info memory position = _getPosition(market, owner, id);
-        debt_ = _debt(position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        debt_ = _debt(_position);
     }
 
     /// @notice Gets the current cost of the position on the Overlay
@@ -343,8 +340,8 @@ abstract contract OverlayV1PositionState is
         address owner,
         uint256 id
     ) external view returns (uint256 cost_) {
-        Position.Info memory position = _getPosition(market, owner, id);
-        cost_ = _cost(position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        cost_ = _cost(_position);
     }
 
     /// @notice Gets the current open interest of the position on the Overlay
@@ -355,8 +352,8 @@ abstract contract OverlayV1PositionState is
         address owner,
         uint256 id
     ) external view returns (uint256 oi_) {
-        Position.Info memory position = _getPosition(market, owner, id);
-        oi_ = _oi(market, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        oi_ = _oi(market, _position);
     }
 
     /// @notice Gets the current collateral backing the position on the
@@ -370,8 +367,8 @@ abstract contract OverlayV1PositionState is
         address owner,
         uint256 id
     ) external view returns (uint256 collateral_) {
-        Position.Info memory position = _getPosition(market, owner, id);
-        collateral_ = _collateral(market, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        collateral_ = _collateral(market, _position);
     }
 
     /// @notice Gets the current value of the position on the Overlay market
@@ -384,8 +381,8 @@ abstract contract OverlayV1PositionState is
     ) external view returns (uint256 value_) {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
-        Position.Info memory position = _getPosition(market, owner, id);
-        value_ = _value(market, data, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        value_ = _value(market, data, _position);
     }
 
     /// @notice Gets the current notional of the position on the Overlay market
@@ -398,8 +395,8 @@ abstract contract OverlayV1PositionState is
     ) external view returns (uint256 notional_) {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
-        Position.Info memory position = _getPosition(market, owner, id);
-        notional_ = _notional(market, data, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        notional_ = _notional(market, data, _position);
     }
 
     /// @notice Gets the trading fee charged to unwind the position on the
@@ -413,12 +410,12 @@ abstract contract OverlayV1PositionState is
     ) external view returns (uint256 tradingFee_) {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
-        Position.Info memory position = _getPosition(market, owner, id);
-        uint256 notional = _notional(market, data, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        uint256 notional_ = _notional(market, data, _position);
 
         // get the trading fee rate from risk params
         uint256 tradingFeeRate = market.params(uint256(Risk.Parameters.TradingFeeRate));
-        tradingFee_ = notional.mulUp(tradingFeeRate);
+        tradingFee_ = notional_.mulUp(tradingFeeRate);
     }
 
     /// @notice Gets whether the position is currently liquidatable on the Overlay
@@ -431,8 +428,8 @@ abstract contract OverlayV1PositionState is
     ) external view returns (bool liquidatable_) {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
-        Position.Info memory position = _getPosition(market, owner, id);
-        liquidatable_ = _liquidatable(market, data, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        liquidatable_ = _liquidatable(market, data, _position);
     }
 
     /// @notice Gets the liquidation fee rewarded to the liquidator if
@@ -447,8 +444,8 @@ abstract contract OverlayV1PositionState is
     ) external view returns (uint256 liquidationFee_) {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
-        Position.Info memory position = _getPosition(market, owner, id);
-        liquidationFee_ = _liquidationFee(market, data, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        liquidationFee_ = _liquidationFee(market, data, _position);
     }
 
     /// @notice Gets the maintenance margin required to keep the position
@@ -459,10 +456,8 @@ abstract contract OverlayV1PositionState is
         address owner,
         uint256 id
     ) external view returns (uint256 maintenanceMargin_) {
-        address feed = market.feed();
-        Oracle.Data memory data = _getOracleData(feed);
-        Position.Info memory position = _getPosition(market, owner, id);
-        maintenanceMargin_ = _maintenanceMargin(market, position);
+        Position.Info memory _position = _getPosition(market, owner, id);
+        maintenanceMargin_ = _maintenanceMargin(market, _position);
     }
 
     /// @notice Gets the current position remaining margin to eat through
@@ -478,13 +473,13 @@ abstract contract OverlayV1PositionState is
     ) external view returns (int256 excess_) {
         address feed = market.feed();
         Oracle.Data memory data = _getOracleData(feed);
-        Position.Info memory position = _getPosition(market, owner, id);
+        Position.Info memory _position = _getPosition(market, owner, id);
 
         // liquidation uses mid price
-        uint256 value = _valueForLiquidations(market, data, position);
-        uint256 maintenanceMargin = _maintenanceMargin(market, position);
-        uint256 liquidationFee = _liquidationFee(market, data, position);
-        excess_ = int256(value) - int256(maintenanceMargin) - int256(liquidationFee);
+        uint256 value_ = _valueForLiquidations(market, data, _position);
+        uint256 maintenanceMargin_ = _maintenanceMargin(market, _position);
+        uint256 liquidationFee_ = _liquidationFee(market, data, _position);
+        excess_ = int256(value_) - int256(maintenanceMargin_) - int256(liquidationFee_);
     }
 
     /// @notice Gets the current liquidation price of the position on the
@@ -495,23 +490,22 @@ abstract contract OverlayV1PositionState is
         address owner,
         uint256 id
     ) external view returns (uint256 liquidationPrice_) {
-        address feed = market.feed();
-        Position.Info memory position = _getPosition(market, owner, id);
+        Position.Info memory _position = _getPosition(market, owner, id);
 
         // get position attributes independent of funding
-        uint256 entryPrice = position.entryPrice();
+        uint256 entryPrice = _position.entryPrice();
         uint256 liquidationFeeRate = market.params(uint256(Risk.Parameters.LiquidationFeeRate));
-        uint256 maintenanceMargin = _maintenanceMargin(market, position);
+        uint256 maintenanceMargin_ = _maintenanceMargin(market, _position);
 
         // get position attributes dependent on funding
-        uint256 oi = _oi(market, position);
-        uint256 collateral = _collateral(market, position);
-        require(oi > 0, "OVLV1: oi == 0");
+        uint256 oi_ = _oi(market, _position);
+        uint256 collateral_ = _collateral(market, _position);
+        require(oi_ > 0, "OVLV1: oi == 0");
 
         // get price delta from entry price: dp = | liqPrice - entryPrice |
-        uint256 dp = collateral
-            .subFloor(maintenanceMargin.divUp(FixedPoint.ONE - liquidationFeeRate))
-            .divUp(oi);
-        liquidationPrice_ = position.isLong ? entryPrice.subFloor(dp) : entryPrice + dp;
+        uint256 dp = collateral_
+            .subFloor(maintenanceMargin_.divUp(FixedPoint.ONE - liquidationFeeRate))
+            .divUp(oi_);
+        liquidationPrice_ = _position.isLong ? entryPrice.subFloor(dp) : entryPrice + dp;
     }
 }
